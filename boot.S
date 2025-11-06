@@ -23,12 +23,12 @@ gdt: /* Global Descriptor Table */
     .long 0x00CF9200 /* Base:0, Access, Limit:0xFFFFFFFF, Ring:0, Type: 2(Writable) */
 
 gdt_ptr:
-    .short 0x7FF /* Length of GDT in bytes, 256 bytes */  
-    .long gdt /* Linear (base) address of GDT */
+    .short 0x7FF /* Length of GDT in bytes, 256(?2048??) bytes. We have 3 descriptors total of 24 bytes */
+    .long gdt /* 4 byte Linear (base) address of GDT */
 
 idt_ptr:
     .short 0x7FF /* Length of IDT in bytes, 2048 bits */
-    .long idt /* Linear (base) address of IDT */    
+    .long idt /* Linear (base) address of IDT */
     .text
     .globl _start
 
@@ -66,14 +66,14 @@ real_start:
     /* Set up IDT */
     /* We can do this part in the C code as well (and actually, we should!! */
     movl $idt, %edi
-    movl $0x300, %ecx /* 0x300 = 768 entries, each 8 bytes */
-    movl $0x080000, %edx /* Interrupt gate descriptor for 32-bit interrupt */
+    movl $0x30, %ecx /* 0x30 = 48 entries, each 8 bytes - set counter for 48 idt entries used*/
+    movl $0x080000, %edx /* Interrupt gate descriptor for 32-bit interrupt - ? used to index kernel code segment ?*/
     movl $int_table, %esi /* Base address for the interrupt table */
-    
-1: 
+
+1:
     lodsl
     movw %ax, %dx /* Lower 16 bits of int_table */
-    movw $0xEE00, %ax /* DPL = 3, Present = 1, Type = 0xE (32-bit interrupt gate) */
+    movw $0xEE00, %ax /* DPL = 3, Present = 1, Type = 0xE (32-bit interrupt gate) ??? */
     movw %edx, (%edi) /* Store bottom 32 bits */
     addl $4, %edi
     stosl /* Store top 32 bits */
@@ -85,3 +85,8 @@ real_start:
 
     /* Call the main kernel function */
     call init /* Call the C function 'init' */
+    cli /* Clear interrupts */
+    hlt /* Halt the CPU */
+
+loop:
+    jmp loop /* Infinite loop to prevent falling through */
