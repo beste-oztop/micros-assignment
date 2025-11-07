@@ -29,10 +29,11 @@ static int heap_resize(Heap* h, size_t newcap) {
     return 0;
 }
 
+/* MIN-HEAP sift_up: bubble smaller elements up so the root is the minimum */
 static void sift_up(Heap* h, size_t idx) {
     while (idx > 0) {
         size_t parent = (idx - 1) / 2;
-        if (h->data[parent] >= h->data[idx]) break; // max-heap: parent >= child
+        if (h->data[parent] <= h->data[idx]) break; // min-heap: parent <= child
         swap_int(&h->data[parent], &h->data[idx]);
         idx = parent;
     }
@@ -42,12 +43,12 @@ static void sift_down(Heap* h, size_t idx) {
     for (;;) {
         size_t left = idx * 2 + 1;
         size_t right = left + 1;
-        size_t largest = idx;
-        if (left < h->size && h->data[left] > h->data[largest]) largest = left;
-        if (right < h->size && h->data[right] > h->data[largest]) largest = right;
-        if (largest == idx) break;
-        swap_int(&h->data[largest], &h->data[idx]);
-        idx = largest;
+        size_t smallest = idx;
+        if (left < h->size && h->data[left] < h->data[smallest]) smallest = left;
+        if (right < h->size && h->data[right] < h->data[smallest]) smallest = right;
+        if (smallest == idx) break;
+        swap_int(&h->data[smallest], &h->data[idx]);
+        idx = smallest;
     }
 }
 

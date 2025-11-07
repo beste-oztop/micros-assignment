@@ -3,36 +3,7 @@
 
 #define FALSE 0
 #define TRUE 1
-#define NULL -1
-
-typedef signed char bool;
-typedef unsigned short int uint16_t;
-typedef unsigned long int uint32_t;
-
-
-typedef struct thread_control_block {
-    int tid; // thread ID
-    uint32_t bp; // base pointer
-    uint32_t sp; // stack pointer
-    uint32_t entry; // entry point
-    int flag; // general purpose flag
-    struct thread_control_block *next; // next thread in the queue
-    struct thread_control_block *left_child; // left child in the tree
-    struct thread_control_block *right_child; // right child in the tree
-    struct thread_control_block *parent; // parent thread
-    int state; // state of the thread (e.g., ready, running, exited)
-} tcb;
-
-#define MAX_THREADS 10
-int thread_ids = 1;
-
-static bool done[MAX_THREADS] = {0};
-int counter[MAX_THREADS] = {0};
-
-uint32_t *f[MAX_THREADS]; /*Array of pointers to function addresses*/
-uint32_t *stacks[MAX_THREADS] = {};
-tcb *micros_threads[MAX_THREADS]; /*Array of pointers to TCBs*/
-
+#define NULL ((void*)0)  // Define NULL as a void pointer
 
 
 /* Base address of the VGA frame buffer */

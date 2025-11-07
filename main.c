@@ -1,6 +1,7 @@
+/* main.c: Main program for testing the heap implementation. Not part of the kernel*/
 #include <stdio.h>
 #include <stdlib.h>
-#include "../src/heap.h"
+#include "heap.h"
 
 int main(void) {
     Heap *h = heap_create(0);

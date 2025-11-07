@@ -1,8 +1,26 @@
+/* thread.c: thread management functions */
 #include "helpers.h"
-
+#include "thread.h"
 
 void exit_thread(void){
     /* Change the state of the current thread to exited */
+
+    /*
+    FIXME reference code from fifos delete once done
+    current->state = 0;
+    if(FIFOS == 1){
+        int flag = schedule();
+        if(flag==0)
+            dispatch_first_run();
+        else{
+            __asm__ volatile ("hlt");
+        }
+    }
+    else{
+        __asm__ volatile ("hlt");
+        // puts("danger");
+        // dispatch_first_run();
+    }*/
 }
 
 
