@@ -10,7 +10,7 @@ This document tracks the development progress for the MICROS (Microsecond Time-a
 
 - [x] Basic heap structure defined in `heap.h`
 - [x] Basic TCB structure defined in `helpers.h`
-- [ ] Fix heap implementation - currently max-heap, needs to be **min-heap** (lower priority values = higher priority)
+- [x] Fix heap implementation - currently max-heap, needs to be **min-heap** (lower priority values = higher priority)
 - [ ] Update TCB structure to include scheduling parameters:
   - Add `execution_time` (C)
   - Add `period` (T)
@@ -25,13 +25,13 @@ This document tracks the development progress for the MICROS (Microsecond Time-a
 ## Phase 2: Thread Pool & Creation
 **Status**: Not Started
 
-- [ ] Update `thread_create()` signature to accept args:
+- [X] Update `thread_create()` signature to accept args:
   ```c
   int thread_create(void *stack, void *func, void *args);
   ```
-- [ ] Define `struct sched_params_t` structure for C and T parameters
-- [ ] Modify `thread_create()` to parse and store scheduling parameters from args
-- [ ] Initialize thread pool (array of N TCBs) at boot time
+- [X] Define `struct sched_params_t` structure for C and T parameters
+- [X] Modify `thread_create()` to parse and store scheduling parameters from args
+- [X] Initialize thread pool (array of N TCBs) at boot time
 - [ ] Implement thread pool management (mark busy/idle)
 - [ ] Implement thread termination and return to idle state
 
@@ -268,6 +268,10 @@ This document tracks the development progress for the MICROS (Microsecond Time-a
 - Document all contributions from each team member
 - Cite all external resources used
 
+- Only one CPU core.
+- Multiple threads/jobs.
+- Scheduler chooses which one runs next.
+- Preemption is simulated using timer interrupts (PIT).
 ---
 
 **Last Updated**: November 7, 2025

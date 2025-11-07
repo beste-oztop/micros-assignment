@@ -1,9 +1,6 @@
 #ifndef HELPER_DEFN_FUNCS_H
 #define HELPER_DEFN_FUNCS_H
 
-#define FALSE 0
-#define TRUE 1
-#define NULL ((void*)0)  // Define NULL as a void pointer
 
 
 /* Base address of the VGA frame buffer */
@@ -51,6 +48,10 @@ char * itoa( int value, char * str, int base )
     return rc;
 }
 
+
+void busy_wait(){
+    for(volatile int i = 0; i < 1000000; i++);
+}
 
 void putc(unsigned char c){
     if(c==0x99){ // tab

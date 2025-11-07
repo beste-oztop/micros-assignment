@@ -4,7 +4,7 @@
 #include "heap.h"
 
 int main(void) {
-    Heap *h = heap_create(0);
+    heap_node_t *h = heap_create(0);
     if (!h) { fprintf(stderr, "heap allocation failed\n"); return 1; }
 
     int vals[] = {5, 3, 8, 1, 2, 9, 7};

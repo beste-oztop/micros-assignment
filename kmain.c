@@ -1,5 +1,6 @@
 #include "multiboot.h"
 #include "helpers.h"
+#define KERNEL_MODE  // to enable puts function from helpers.h
 
 /* kmain.c: Kernel main function called by the bootloader (GRUB) */
 void kmain(multiboot_info_t* mbd, unsigned long magic_num){
