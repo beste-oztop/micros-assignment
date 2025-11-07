@@ -34,7 +34,7 @@ typedef uint32 uint32_t;
 typedef uint64 uint64_t;
 #endif
 
-/* segment descriptor breakdown in bits 
+/* segment descriptor breakdown in bits
 
     Limit: (0-15) + (48-51)
     Base: (16-31) + (32-39) + (56-63)
@@ -81,8 +81,8 @@ typedef struct task_control_block{
     uint32_t entry; /* starting entry point -> EIP */
     /* 0 - Idle, 1 - Busy*/
     int state; /*Same as Rich's flag ( or should be )*/
-    
-    struct task_control_block *next; 
+
+    struct task_control_block *next;
     uint32_t sp; /*Stack pointer? Bottom of stack??*/
 
     /* Does each thread need to keep track of its next / prev ??? */
@@ -94,7 +94,7 @@ typedef struct runqueue_node{
     struct task_control_block *t;
     struct runqueue_node *next;
     struct runqueue_node *prev;
-} node; 
+} node;
 
 typedef struct {
 	short    isr_low;      // The lower 16 bits of the ISR's address

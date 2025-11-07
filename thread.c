@@ -7,7 +7,7 @@ void exit_thread(void){
 
 
 int get_tcb(){
-    /*Return index for a tcb if the state is idle (0)*/ 
+    /*Return index for a tcb if the state is idle (0)*/
     for(int i = 0; i < MAX_THREADS; i++){
         if(micros_threads[i]->state == 0){
             return i;
@@ -55,7 +55,7 @@ int thread_create(void *stack, void *func){
     /*ECX*/ *(((uint32_t *) stack) - 3) = 0;
     /*EDX*/ *(((uint32_t *) stack) - 4) = 0;
 
-    /*EBX*/ *(((uint32_t *) stack) - 5) = 0; 
+    /*EBX*/ *(((uint32_t *) stack) - 5) = 0;
     /*ESP*/ *(((uint32_t *) stack) - 6) = (uint32_t)(((uint32_t *) stack) - 2);
     /*EBP*/ *(((uint32_t *) stack) - 7) = (uint32_t)(((uint32_t *) stack) - 2);
     /*ESI*/ *(((uint32_t *) stack) - 8) = 0;

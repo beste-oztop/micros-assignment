@@ -24,7 +24,7 @@ void put_memory(char *text){
     2 - Reserved - Unusable
     3 - ACPI reclaimable Mem
     4 - ACPI NVS MEMORY
-    5 - MEMORY 
+    5 - MEMORY
 */
 char* process_mem_type(unsigned long type){
     if(type == 1){
@@ -55,7 +55,7 @@ void printMemoryMap(multiboot_info_t* binfo){
     }
 
     /* Process to find Total memory first -> matches desired output in assignment specifications*/
-    int i; 
+    int i;
     for(i=0; i < binfo->mmap_length; i+=sizeof(memory_map_t)){
         memory_map_t* mmt = (memory_map_t*)(binfo->mmap_addr + i);
         /*Only add up type 1 memory*/

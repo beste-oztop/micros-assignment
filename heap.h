@@ -3,11 +3,18 @@
 
 #include <stddef.h>
 
+// this heap needs to be a min-heap since lower values have higher priority
+// in the heap we should have [thread priority, pointer to thread control block (TCB)]
 typedef struct Heap {
     int *data;
     size_t size;
     size_t capacity;
 } Heap;
+
+
+/*
+We need to implement: heapify(), heap_insert() and heap_remove() functions.
+*/
 
 /* Create a new heap. If capacity == 0 a default is used. Returns NULL on alloc failure. */
 Heap* heap_create(size_t capacity);
