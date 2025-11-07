@@ -84,7 +84,7 @@ real_start:
     lidt idt_ptr
 
     /* Call the main kernel function */
-    call init /* Call the C function 'init' */
+    call kmain /* Call the C function 'kmain' */
     cli /* Clear interrupts */
     hlt /* Halt the CPU */
 
