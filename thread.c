@@ -2,9 +2,10 @@
 #include "thread.h"
 
 
-int thread_ids = 1;             // next available TID (1-based internal)
-int curr_tid = -1;              // current running thread TID (-1 = none)
-tcb *current_thread = 0;        // pointer to currently running TCB
+/* Global thread bookkeeping */
+int thread_ids = 1;             /* next available TID (1-based internal) */
+int curr_tid = -1;              /* current running thread TID (-1 = none) */
+tcb *current_thread = NULL;     /* pointer to currently running TCB */
 kbool_t done[MAX_THREADS] = {0}; // flags to indicate if thread is done
 int counter[MAX_THREADS] = {0};  // keeps track of how many times each thread has run
 uint32_t *f[MAX_THREADS] = {0};  // function pointers for each thread

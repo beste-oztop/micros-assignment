@@ -31,7 +31,7 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
         puts("invalid memory map given by GRUB bootloader");
     }
 
-    // create pool of threads
+    // Initiailize the thread pool
     init_thread_pool();
 
     
@@ -52,15 +52,11 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
         thread_create(thread_stacks[i], f[i], &schedparams);
     }
 
-    // Initiailize the thread pool
-    init_thread_pool();
-    puts("\n");
-    puts("\n");
     puts("Ready queue looks like this:\n");
     heap_print(ready_queue);
 
     // FIXME: start scheduling using rate-monotonic scheduling
-    // schedule_rm();
+    schedule_rm();
     // FIXME: we need to implement the dispatch function to switch to the scheduled thread
     // dispatch_first_run();
 }
