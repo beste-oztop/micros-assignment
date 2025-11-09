@@ -46,6 +46,26 @@ void exit_thread(void){
     tcb* curr_thread = get_current_thread(curr_tid);
     // here we need to check if job of thread finished or not.
     // If finished, set state to 0, otherwise update remaining execution time
+    if(curr_thread->is_periodic){
+        curr_thread->jobs_done++;
+        if(curr_thread->jobs_done >= curr_thread->max_jobs){
+            curr_thread->state = THREAD_EXITED;
+        }else{
+            curr_thread->remaining_time = curr_thread->execution_time;
+            curr_thread->next_arrival += curr_thread->period;
+            curr_thread->state = THREAD_READY;
+            // Reinsert into ready queue
+            if (ready_queue) {
+                if (heap_insert(ready_queue, curr_thread) != 0) {
+                    #ifdef KERNEL_MODE
+                        puts("Failed to reinsert thread into ready queue!\n");
+                    #else
+                        printf("Failed to reinsert thread into ready queue!\n");
+                    #endif
+                }
+            }
+        }
+    }
 }
 
 

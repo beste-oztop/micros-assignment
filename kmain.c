@@ -2,6 +2,15 @@
 #include "helpers.h"
 #define KERNEL_MODE  // to enable puts function from helpers.h
 
+
+
+/* Args for thread creation, where MAX_THREADS is 3*/
+/* <TIDi, Ci, Ti,>
+<1, 2, 5>
+<2, 2, 10>
+<3, 3, 20>
+*/
+
 /* kmain.c: Kernel main function called by the bootloader (GRUB) */
 void kmain(multiboot_info_t* mbd, unsigned long magic_num){
     puts("Hello, World!\n");

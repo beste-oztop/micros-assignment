@@ -9,6 +9,7 @@
 
 
 #define MAX_THREADS 10
+#define SIM_TIME 100  // time slice in milliseconds
 #define STACK_SIZE 4096  // 4KB per thread stack
 
 /* Thread states */
