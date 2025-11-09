@@ -5,8 +5,6 @@
 .globl dispatch_first_run
 
 
-
-
 context_switch:
     pushfl
     pushal
@@ -34,6 +32,7 @@ context_switch:
 
     ret
 
+
 yield:
     call dispatcher
 
@@ -41,7 +40,7 @@ yield:
 dispatcher:
     pushfl
     pushal
-    
+
     # do we need to push the segment registers, too?
     pushw %ds
     pushw %es

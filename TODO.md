@@ -11,7 +11,7 @@ This document tracks the development progress for the MICROS (Microsecond Time-a
 - [x] Basic heap structure defined in `heap.h`
 - [x] Basic TCB structure defined in `helpers.h`
 - [x] Fix heap implementation - currently max-heap, needs to be **min-heap** (lower priority values = higher priority)
-- [ ] Update TCB structure to include scheduling parameters:
+- [x] Update TCB structure to include scheduling parameters:
   - Add `execution_time` (C)
   - Add `period` (T)
   - Add `priority` (calculated as inversely proportional to period)
@@ -40,11 +40,11 @@ This document tracks the development progress for the MICROS (Microsecond Time-a
 ## Phase 3: Heap-Based Priority Queue
 **Status**: Not Started
 
-- [ ] Implement `heap_insert()` - add thread to heap based on priority
-- [ ] Implement `heap_remove()` - remove and return highest priority thread
+- [x] Implement `heap_insert()` - add thread to heap based on priority
+- [x] Implement `heap_remove()` - remove and return highest priority thread
 - [ ] Implement `heapify()` - rebuild heap maintaining min-heap property
-- [ ] Modify heap structure to store `[priority, TCB pointer]` instead of just integers
-- [ ] Create ready queue management functions:
+- [x] Modify heap structure to store `[priority, TCB pointer]` instead of just integers
+- [] Create ready queue management functions:
   - `add_to_ready_queue(tcb *thread)`
   - `get_next_thread()`
   - `remove_from_ready_queue(tcb *thread)`
@@ -54,7 +54,7 @@ This document tracks the development progress for the MICROS (Microsecond Time-a
 ## Phase 4: Basic Non-Preemptive Scheduling (Step 1)
 **Status**: Not Started
 
-- [ ] Implement basic `schedule_rm()` function
+- [x] Implement basic `schedule_rm()` function
 - [ ] Pick threads from heap in priority order
 - [ ] Run each thread to completion (non-preemptive)
 - [ ] Create simple test thread functions that print `<TID,C,T>` format

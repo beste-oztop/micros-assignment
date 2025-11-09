@@ -1,26 +1,24 @@
 /* thread.c: thread management functions */
 #include "thread.h"
-#include "defs.h"
-
-#ifdef KERNEL_MODE
-#include "helpers.h"
-#else
-#include <stdlib.h>
-#include <string.h>
-#endif
 
 
-
-int thread_ids = 0;             // next available TID (0-based internal)
+int thread_ids = 1;             // next available TID (1-based internal)
 int curr_tid = -1;              // current running thread TID (-1 = none)
 tcb *current_thread = 0;        // pointer to currently running TCB
-kbool_t done[MAX_THREADS] = {0};
-int counter[MAX_THREADS] = {0};
-uint32_t *f[MAX_THREADS] = {0};
-uint32_t *stacks[MAX_THREADS] = {0};
-tcb *micros_threads[MAX_THREADS] = {0};
+kbool_t done[MAX_THREADS] = {0}; // flags to indicate if thread is done
+int counter[MAX_THREADS] = {0};  // keeps track of how many times each thread has run
+uint32_t *f[MAX_THREADS] = {0};  // function pointers for each thread
+// uint32_t *stacks[MAX_THREADS] = {0};  // stack pointers for each thread
+tcb *micros_threads[MAX_THREADS] = {0};  /*Array of pointers to TCBs*/
 thread_heap_t* ready_queue = NULL; // global ready queue heap
 
+
+/* we don't have access to malloc in kernel mode, so we can statically allocate the thread pool */
+/* Statically allocate stacks (4KB each, aligned) */
+uint8_t thread_stacks[MAX_THREADS][STACK_SIZE_PER_THREAD] __attribute__((aligned(16)));
+
+/* Initialize the thread pool - must be called before using threads */
+static tcb tcb_pool[MAX_THREADS];
 
 void exit_thread(void){
     /* Change the state of the current thread to exited
@@ -84,12 +82,10 @@ void init_thread_pool(void) {
         }
     }
     for (int i = 0; i < MAX_THREADS; i++) {
-        micros_threads[i] = (tcb*)malloc(sizeof(tcb));
-        if (micros_threads[i]) {
-            memset(micros_threads[i], 0, sizeof(tcb));
-            micros_threads[i]->tid = i;
-            micros_threads[i]->state = THREAD_IDLE;  // Start as idle
-        }
+        micros_threads[i] = &tcb_pool[i];
+        // memset(micros_threads[i], 0, sizeof(tcb));
+        micros_threads[i]->tid = i;
+        micros_threads[i]->state = THREAD_IDLE;  // Start as idle
     }
 }
 
@@ -97,10 +93,7 @@ void init_thread_pool(void) {
 /* Cleanup thread pool - call at shutdown */
 void cleanup_thread_pool(void) {
     for (int i = 0; i < MAX_THREADS; i++) {
-        if (micros_threads[i]) {
-            free(micros_threads[i]);
-            micros_threads[i] = NULL;
-        }
+        micros_threads[i] = NULL;
     }
 }
 
@@ -121,6 +114,26 @@ int get_tcb(){
 tcb* get_current_thread(int tid){
     return micros_threads[tid];
 }
+
+
+/* TODO remove once done
+we may not have access to malloc in kernel mode, so we can statically allocate the thread pool
+stack creation:
+
+for(int i = 0; i < MAX_THREADS; i++){
+    done[i] = FALSE;
+    fifos_threads[i] = (tcb *)0x500000 + (i * 0x1000);
+    stacks[i] = (uint32_t *)0x400000 + (i * 0x1001);
+    f[i] = (uint32_t *)thread;
+    thread_create(stacks[i], f[i]);
+}
+    put the address of thread 1 in a function pointer, and this time pass a parameter, 1, to thread 1
+
+
+*/
+
+
+
 
 /* We can create pool of N threads statically
 We can assume the thread pool exists at boot time, and no further threads need to be created dynamically
@@ -226,4 +239,32 @@ int thread_create(void *stack, void *func, void *args){
     }
     curr_tid = new_tcb;
     return new_tcb + 1;  // return thread id (1-based)
+}
+
+
+
+int thread_func(){
+    int id = thread_ids++;  //  id is 0 based
+    int i;
+    char buff[16];
+    itoa(id, buff, 10);
+    while(1){
+        for (i = 0; i < 10; i++){
+            puts(buff);
+            busy_wait();
+        }
+        putc('\n');
+        // if(FIFOS==1) // TODO implement yield condition -> preemptive scheduling
+        // yield();  // TODO implement yield function
+        if(++counter[id-1] == 3)  // run 3 times, counter is global array  -> this needs to come from args
+            break;
+    }
+
+    // thread finished executing
+    puts("Done ");
+    puts(buff);
+    puts(" !\n");
+
+    done[id-1] = TRUE;
+    return 0;
 }

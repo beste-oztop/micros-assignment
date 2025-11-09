@@ -1,13 +1,10 @@
-#include "helpers.h"
-#include "thread.h"
-#include "heap.h"
-#include "defs.h"
-#include <stdio.h>
-#include <stdlib.h>
+#include "scheduler.h"
+// #include <stdio.h>
+// #include <stdlib.h>
 
 /* Rate-Monotonic Scheduling Implementation */
 extern tcb *micros_threads[MAX_THREADS]; /*Array of pointers to TCBs*/
-
+// extern thread_heap_t* ready_queue;  // FIXME: ADD THIS - use the global ready queue
 
 
 /*
@@ -48,15 +45,34 @@ static int rm_cmp(const void *a, const void *b){
         return (t1->tid < t2->tid) ? -1 : (t1->tid > t2->tid);
 }
 
+/*
+Any thread that later becomes idle is not put back in the ready queue.
+*/
 void schedule_rm(void){
-        thread_heap_t *ready_queue = heap_create(rm_cmp);
-        if (!ready_queue) return;
+        // REMOVE THIS LINE: thread_heap_t *ready_queue = heap_create(rm_cmp);
+        thread_heap_t *ready_queue = heap_create(rm_cmp);  // FIXME: instead of creating new ready queue, use global one
+        if (!ready_queue) {
+                #ifdef KERNEL_MODE
+                        puts("Error: ready_queue not initialized!\n");
+                #else
+                        printf("Error: ready_queue not initialized!\n");
+                #endif
+                return;
+    }
 
         /* per-thread deadlines kept externally because struct does not have a 'deadline' field */
         uint32_t deadlines[MAX_THREADS];
 
         /* initialize per-thread bookkeeping */
         for (int i = 0; i < MAX_THREADS; ++i){
+                if (!micros_threads[i]) { // skip NULL entries
+                        #ifdef KERNEL_MODE
+                                puts("Skipping null entries!\n");
+                        #else
+                                printf("Skipping null entries!\n");
+                        #endif
+                        continue;
+                }
                 micros_threads[i]->remaining_time = 0;           /* no job at time 0 unless next_arrival == 0 */
                 if (micros_threads[i]->next_arrival <= 0) {
                         /* normalize next_arrival: if negative or zero, set to 0 */
@@ -140,5 +156,5 @@ void schedule_rm(void){
         heap_destroy(ready_queue);
 
         /* report missed deadlines (adapt printing mechanism to your environment) */
-        printf("RM schedule finished. Missed deadlines: %d\n", missed_deadlines);
+        // printf("RM schedule finished. Missed deadlines: %d\n", missed_deadlines);
 }

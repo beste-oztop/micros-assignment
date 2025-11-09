@@ -5,6 +5,7 @@
 
 .comm stack 0x1000 /* Reserve 4KB for stack area in bss */
 .comm idt 0x800 /* Reserve 2KB for IDT in bss */
+.comm int_table 0x800 /* Reserve 2KB for interrupt table */
 
 .data
 .align 0x4
@@ -84,6 +85,7 @@ real_start:
     lidt idt_ptr
 
     /* Call the main kernel function */
+    /* TODO Prepare arguments for kmain */
     call kmain /* Call the C function 'kmain' */
     cli /* Clear interrupts */
     hlt /* Halt the CPU */

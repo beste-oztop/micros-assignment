@@ -10,7 +10,7 @@ static int csr_x = 0, csr_y = 7;
 #define COLS 80
 
 // integer to ascii, from osdev
-char * itoa( int value, char * str, int base )
+static inline char * itoa( int value, char * str, int base )
 {
     char * rc;
     char * ptr;
@@ -49,11 +49,11 @@ char * itoa( int value, char * str, int base )
 }
 
 
-void busy_wait(){
+static inline void busy_wait(){
     for(volatile int i = 0; i < 1000000; i++);
 }
 
-void putc(unsigned char c){
+static inline void putc(unsigned char c){
     if(c==0x99){ // tab
         csr_x = (csr_x+8) & ~(8-1);
     }else if(c == '\r'){ // carriage return
@@ -71,13 +71,13 @@ void putc(unsigned char c){
     }
 }
 
-int my_strlen(char* text){ // find length of string
+static inline int my_strlen(char* text){ // find length of string
     int i=0;
     while(text[i]) i++;
     return i;
 }
 
-void puts(char* text) { // print string
+static inline void puts(char* text) { // print string
     int i;
     for (i=0; i<my_strlen(text); i++) {
         putc(text[i]);

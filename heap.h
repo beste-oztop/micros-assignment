@@ -1,29 +1,10 @@
 #ifndef HEAP_H
 #define HEAP_H
 
-#include <stddef.h>
-#include "thread.h"
+
+// #include "thread.h"
 #include "defs.h"
-
-
-#ifdef KERNEL_MODE
 #include "helpers.h"
-#endif
-
-// in the heap we should have [thread priority, pointer to thread control block (TCB)]
-typedef struct heap_node
-{
-    priority_t priority;   // The key for comparison (lower = higher priority)
-    tcb* tcb;           // Pointer to the thread control block
-} heap_node_t;
-
-// this heap needs to be a min-heap since lower values have higher priority
-typedef struct Heap {
-    heap_node_t *data; // Array of heap nodes
-    size_t size;  // Current number of threads in the heap
-    size_t capacity;  // Maximum capacity of the heap
-} thread_heap_t;
-
 
 /*
 We need to implement: heapify(), heap_insert() and heap_remove() functions.

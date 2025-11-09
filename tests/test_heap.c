@@ -3,10 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "heap.h"
-#include "thread.h"
-#include "defs.h"
-
+#include "../heap.h"     // Changed: Add ../ to go up one directory
+#include "../thread.h"   // Changed: Add ../
+#include "../defs.h"     // Changed: Add ../
 /* Test result tracking */
 typedef struct {
     int total;

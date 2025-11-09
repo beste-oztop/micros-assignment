@@ -1,6 +1,10 @@
 #include "multiboot.h"
 #include "helpers.h"
-#define KERNEL_MODE  // to enable puts function from helpers.h
+#include "defs.h"
+#include "thread.h"
+#include "heap.h"
+// #include "scheduler.h"
+// #define KERNEL_MODE  // to enable puts function from helpers.h
 
 
 
@@ -26,5 +30,19 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
         puts("invalid memory map given by GRUB bootloader");
     }
 
+    // create pool of threads
+    init_thread_pool();
 
+    for(int i = 0; i < MAX_THREADS; i++){
+        done[i] = FALSE;
+
+        f[i] = (uint32_t *)thread_func;
+        // TODO read from predefined args
+        struct_schedparams_t schedparams = { .execution_time = 2 + i, .period = 5 * (i + 1), .max_jobs = 3 };
+
+        thread_create(thread_stacks[i], f[i], &schedparams);
+    }
+
+    // start scheduling using rate-monotonic scheduling
+    // schedule_rm();
 }

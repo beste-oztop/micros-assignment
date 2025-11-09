@@ -1,8 +1,15 @@
 #include "heap.h"
-#include <stdlib.h>
-#include <stdio.h>
+#include "thread.h"
+// #include <stdlib.h>
+// #include <stdio.h>
 
 // static void swap_int(int *a, int *b) { int t = *a; *a = *b; *b = t; }
+
+
+/* Static allocation for kernel mode */
+static thread_heap_t global_heap;
+static heap_node_t global_heap_data[MAX_THREADS];
+
 
 /* Swap two heap nodes */
 static void swap_node(heap_node_t *a, heap_node_t *b) {
@@ -11,13 +18,16 @@ static void swap_node(heap_node_t *a, heap_node_t *b) {
     *b = temp;
 }
 
+/* In kernel mode, we don't have access to malloc*/
 thread_heap_t* heap_create(size_t capacity) {
-    thread_heap_t *h = malloc(sizeof(thread_heap_t));
+    // thread_heap_t *h = malloc(sizeof(thread_heap_t));
+    thread_heap_t *h = &global_heap;
     if (!h) return NULL;
     if (capacity == 0) capacity = 8; // Default capacity
-    h->data = malloc(sizeof(heap_node_t) * capacity);
+    // h->data = malloc(sizeof(heap_node_t) * capacity);
+    h->data = global_heap_data; // Use static allocation in kernel mode
     if (!h->data) {  // Allocation failed
-        free(h);
+        // free(h);
         return NULL;
     }
     h->size = 0;
@@ -25,19 +35,26 @@ thread_heap_t* heap_create(size_t capacity) {
     return h;
 }
 
-void heap_destroy(thread_heap_t* h) {
-    if (!h) return;
-    free(h->data); // Free the array (doesn't free the threads themselves) frees the pointers to tcb
-    free(h);
-}
+// void heap_destroy(thread_heap_t* h) {
+//     if (!h) return;
+//     free(h->data); // Free the array (doesn't free the threads themselves) frees the pointers to tcb
+//     free(h);
+// }
 
+// we should not need resizing in kernel mode
 static int heap_resize(thread_heap_t* h, size_t newcap) {
-    if (!h) return -1;
+    /*if (!h) return -1;
     heap_node_t *tmp = realloc(h->data, sizeof(heap_node_t) * newcap);
     if (!tmp) return -1;
     h->data = tmp;
     h->capacity = newcap;
-    return 0;
+    return 0;*/
+
+    // Can't resize static allocation - check bounds
+    if (!h) return -1;
+    if (newcap > MAX_THREADS) return -1;
+    // Capacity is fixed at MAX_THREADS
+    return -3;
 }
 
 /* MIN-HEAP sift_up: bubble smaller elements up so the root is the minimum */
