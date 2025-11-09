@@ -8,8 +8,8 @@
 #define KERNEL_MODE  // to enable puts function from helpers.h
 
 
-#define MAX_THREADS 2
-#define SIM_TIME 100  // time slice in milliseconds
+#define MAX_THREADS 3  // maximum number of threads
+#define SIM_TIME 10000  // time slice in milliseconds
 #define STACK_SIZE_PER_THREAD 4096  // 4KB per thread stack
 
 /* Thread states */

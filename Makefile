@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -m32 -fno-builtin -fno-stack-protector -fno-strict-aliasing -fno-delete-null-pointer-checks -nostdinc -I. -g -Wall -std=c99
 CPPFLAGS = -Wa,--32 -MMD
-# add scheduler.o later after it get fixed.
-OBJS = boot.o init.o kmain.o thread.o heap.o
+# add schedule.o later after it get fixed.
+OBJS = boot.o init.o kmain.o thread.o heap.o scheduler.o
 PROGS = memos-2
 MNT_POINT=/mnt/
 
@@ -16,6 +16,9 @@ memos-2: $(OBJS)
 install: $(PROGS)
 	cp $(PROGS) $(MNT_POINT)/boot
 	sync
+
+run:
+	qemu-system-i386 -kernel memos-2 -vnc :1
 
 clean:
 	-rm *.o *.d $(PROGS) *~

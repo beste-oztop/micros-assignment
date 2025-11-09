@@ -35,11 +35,19 @@ thread_heap_t* heap_create(size_t capacity) {
     return h;
 }
 
-// void heap_destroy(thread_heap_t* h) {
-//     if (!h) return;
-//     free(h->data); // Free the array (doesn't free the threads themselves) frees the pointers to tcb
-//     free(h);
-// }
+#ifdef KERNEL_MODE
+void heap_destroy(thread_heap_t* h) {
+    // No-op in kernel mode: static allocations (global_heap, global_heap_data)
+    // must not be freed.
+    (void)h;
+}
+#else
+void heap_destroy(thread_heap_t* h) {
+    if (!h) return;
+    free(h->data); // Free the array (doesn't free the threads themselves) frees the pointers to tcb
+    free(h);
+}
+#endif
 
 // we should not need resizing in kernel mode
 static int heap_resize(thread_heap_t* h, size_t newcap) {
@@ -124,9 +132,14 @@ int heap_is_empty(const thread_heap_t* h) {
     return !h || h->size == 0;
 }
 
+
+
 #ifdef KERNEL_MODE
 void heap_print(const thread_heap_t* h) {
     if (!h) return;
+    for (size_t i = 0; i < MAX_THREADS; ++i) {
+        puts("");
+    }
     puts("[");
     for (size_t i = 0; i < h->size; ++i) {
         char buffer[12];  // Enough for a 32-bit int + null terminator

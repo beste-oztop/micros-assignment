@@ -84,4 +84,10 @@ static inline void puts(char* text) { // print string
     }
 }
 
+static inline void putint(int value) { // print integer
+    char buffer[16];
+    itoa(value, buffer, 10);
+    puts(buffer);
+}
+
 #endif /* HELPER_DEFN_FUNCS_H */

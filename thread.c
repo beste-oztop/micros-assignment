@@ -157,18 +157,24 @@ does subsequent mean, we should immediately use released TCB? I think our get_tc
 if max num of threads is reached, we need to deal with that case as well.*/
 int thread_create(void *stack, void *func, void *args){
     /* args: struct_schedparams_t -> specifies the C and T values for the thread */
-
-    #ifdef KERNEL_MODE
-        puts("creating thread!\n");
-    #else
-        printf("creating thread!\n");
-    #endif
-
     // cast args to sched params
     struct_schedparams_t* sched_params = (struct_schedparams_t*) args;
     int C = sched_params->execution_time;
     int T = sched_params->period;
 
+    #ifdef KERNEL_MODE
+        puts("Creating thread with execution_time=");
+        putint(sched_params->execution_time);
+        puts(", period=");
+        putint(sched_params->period);
+        puts(", max_jobs=");
+        putint(sched_params->max_jobs);
+        puts("\n");
+    #else
+        printf("Creating thread (not kernel mode)!\n");
+    #endif
+
+    
     int new_tcb = -1;
     uint16_t ds = 0x10, es = 0x10, fs = 0x10, gs = 0x10;  // data segment selectors
 

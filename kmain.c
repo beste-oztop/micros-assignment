@@ -3,7 +3,7 @@
 #include "defs.h"
 #include "thread.h"
 #include "heap.h"
-// #include "scheduler.h"
+#include "scheduler.h"
 // #define KERNEL_MODE  // to enable puts function from helpers.h
 
 
@@ -17,6 +17,7 @@
 
 /* kmain.c: Kernel main function called by the bootloader (GRUB) */
 void kmain(multiboot_info_t* mbd, unsigned long magic_num){
+
     puts("Hello, World!\n");
 
     /* Make sure the magic number matches for memory mapping*/
@@ -33,16 +34,33 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
     // create pool of threads
     init_thread_pool();
 
+    
+    /* Predefined Ci, Ti and max_jobs for [MAX_THREADS] threads */
+    static const uint32_t exec_time_predef[MAX_THREADS] = { 2, 2, 3 };   /* .execution_time*/
+    static const uint32_t period_predef[MAX_THREADS]    = { 10, 5, 20 };  /* .period */
+    static const uint32_t max_jobs_predef[MAX_THREADS]  = { 3, 3, 3 };   /* .max_jobs */
+
+
     for(int i = 0; i < MAX_THREADS; i++){
         done[i] = FALSE;
 
         f[i] = (uint32_t *)thread_func;
-        // TODO read from predefined args
-        struct_schedparams_t schedparams = { .execution_time = 2 + i, .period = 5 * (i + 1), .max_jobs = 3 };
+
+        // Read from predefined args
+        struct_schedparams_t schedparams = { .execution_time = exec_time_predef[i], .period = period_predef[i], .max_jobs = max_jobs_predef[i] };
 
         thread_create(thread_stacks[i], f[i], &schedparams);
     }
 
-    // start scheduling using rate-monotonic scheduling
+    // Initiailize the thread pool
+    init_thread_pool();
+    puts("\n");
+    puts("\n");
+    puts("Ready queue looks like this:\n");
+    heap_print(ready_queue);
+
+    // FIXME: start scheduling using rate-monotonic scheduling
     // schedule_rm();
+    // FIXME: we need to implement the dispatch function to switch to the scheduled thread
+    // dispatch_first_run();
 }
