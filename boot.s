@@ -1,6 +1,6 @@
 .globl _start
 .globl idt
-
+.global set_gdt
 .bss /* Uninitialized global data */
 
 .comm stack 0x1000 /* Reserve 4KB for stack area in bss */
@@ -13,7 +13,12 @@
 stack_addr:
 
 .text
-.global _start
+
+
+gdtr: /* Global Descriptor Table Register - osdev */
+	.word 0      /* Limit (2 bytes) */
+	.long 0      /* Base (4 bytes) */
+
 _start:
 	jmp real_start
 	# multiboot header - must be in 1st page of memory  for GRUB
@@ -33,3 +38,13 @@ real_start:
     # call the kernel main function
 	call kmain
 	hlt
+
+
+set_gdt:
+    movl  4(%esp), %eax    # MOV AX, [esp + 4] -> move 4 bytes at [esp+4] into %eax
+    movw  %ax, gdtr        # MOV [gdtr], AX -> store %ax into gdtr (word, so use movw) -- store lower 2 bytes (limit)
+    movl  8(%esp), %eax    # MOV EAX, [ESP + 8] -> move 4 bytes at [esp+8] into %eax
+    movl  %eax, gdtr+2     # MOV [gdtr + 2], EAX -> store %eax into gdtr+2 (long, so use movl)  -- store  32-bit base address
+    lgdt  gdtr             # LGDT[ gdtr] -> load GDTR with address of gdtr
+    ret                    # RET
+

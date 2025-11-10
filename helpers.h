@@ -15,5 +15,5 @@ void putc(unsigned char c);
 int my_strlen(char* text);
 void puts(char* text);
 void putint(int value);
-
+int bytes_to_mb(int mem_b);
 #endif /* HELPER_DEFN_FUNCS_H */

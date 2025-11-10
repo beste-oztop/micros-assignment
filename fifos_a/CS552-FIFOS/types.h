@@ -35,12 +35,10 @@ typedef uint64 uint64_t;
 #endif
 
 /* segment descriptor breakdown in bits
-
     Limit: (0-15) + (48-51)
     Base: (16-31) + (32-39) + (56-63)
     Access Byte: (40-47)
     Flags: (52-55)
-
 */
 
 struct segment_descriptor {

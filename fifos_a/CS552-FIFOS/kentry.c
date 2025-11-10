@@ -74,7 +74,7 @@ void encodeGdtEntry(uint8_t *target, segment_descriptor_t source){
     target[1] = (source.limit >> 8) & 0xFF;
     target[6] = (source.limit >> 16) & 0x0F;
 
-    // Encode the base 
+    // Encode the base
     target[2] = source.base & 0xFF;
     target[3] = (source.base >> 8) & 0xFF;
     target[4] = (source.base >> 16) & 0xFF;
@@ -98,8 +98,8 @@ int schedule(void){
                 // busy_wait();
                 return 1;
             }
-            // We are done with the current target thread, so unlink it from its neighbors                
-            finished = current; 
+            // We are done with the current target thread, so unlink it from its neighbors
+            finished = current;
             finished->prev->next = current->next;
             current = current->next;
             current->prev = finished->prev;
@@ -159,14 +159,14 @@ int thread(){
     puts("Done ");
     puts(buff);
     puts(" !\n");
-    
+
     done[id-1] = TRUE;
     return 0;
 }
 
 void build_runqueue(){
     tcb *ptr, *pptr;
- 
+
     pptr = fifos_threads[0];
 
     for (int t = 1; t < MAX_THREADS; t++){
@@ -249,7 +249,7 @@ int thread_create(void *stack, void *func){
     /*ECX*/ *(((uint32_t *) stack) - 3) = 0;
     /*EDX*/ *(((uint32_t *) stack) - 4) = 0;
 
-    /*EBX*/ *(((uint32_t *) stack) - 5) = 0; 
+    /*EBX*/ *(((uint32_t *) stack) - 5) = 0;
     /*ESP*/ *(((uint32_t *) stack) - 6) = (uint32_t)(((uint32_t *) stack) - 2);
     /*EBP*/ *(((uint32_t *) stack) - 7) = (uint32_t)(((uint32_t *) stack) - 2);
     /*ESI*/ *(((uint32_t *) stack) - 8) = 0;
@@ -279,8 +279,9 @@ void kmain (multiboot_info_t* binfo) {
     gdt.base = (uint32_t)&gdt_entries;
 
     // puts("setting gdt\n");
-   
+
     setGdt(gdt.limit, gdt.base);
+
     if(FIFOS == 2){
         // puts("gdt set\n");
         PIC_remap(0x20, 0x28);

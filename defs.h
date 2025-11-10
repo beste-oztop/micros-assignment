@@ -99,5 +99,20 @@ typedef struct Heap {
     size_t capacity;  // Maximum capacity of the heap
 } thread_heap_t;
 
+struct segment_descriptor {
+    uint32_t base; /* 32 bits, broken up into sections of 16/8/8*/
+    uint32_t limit; /* limit is only 20 bits, broken up into a 16 bit section and a 4 bit section*/
+    uint8_t access_byte;
+    uint8_t flags; /* Flags is only 4 bits */
+}__attribute__((packed));
+
+typedef struct segment_descriptor gdt_t;
+
+/* Segments for the flat mode GDT setup in 32-bit */
+static gdt_t null_desc = {.base = 0, .limit = 0x00000000, .access_byte = 0x00, .flags = 0x0};
+static gdt_t kernel_code = {.base = 0, .limit = 0xFFFFF, .access_byte = 0x9A, .flags = 0xC};
+static gdt_t kernel_data = {.base = 0, .limit = 0xFFFFF, .access_byte = 0x92, .flags = 0xC};
+
+
 
 #endif /* DEFNS_H */
