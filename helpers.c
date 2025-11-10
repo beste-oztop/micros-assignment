@@ -38,7 +38,9 @@ char * itoa(int value, char * str, int base)
 }
 
 void busy_wait(){
-    for(volatile int i = 0; i < 1000000; i++);
+    for(volatile long i = 0; i < 100000000; i++){
+        __asm__ __volatile__ ("nop");
+    }
 }
 
 void putc(unsigned char c){

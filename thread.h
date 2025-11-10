@@ -5,6 +5,8 @@
 #include "defs.h"
 #include "heap.h"
 #include "helpers.h"
+#include "scheduler.h"
+#include "dispatch.h"
 
 typedef struct struct_schedparams
 {
