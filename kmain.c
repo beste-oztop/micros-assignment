@@ -4,6 +4,7 @@
 #include "thread.h"
 #include "heap.h"
 #include "scheduler.h"
+#include "dispatch.h"
 // #define KERNEL_MODE  // to enable puts function from helpers.h
 
 
@@ -56,7 +57,7 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
     heap_print(ready_queue);
 
     // FIXME: start scheduling using rate-monotonic scheduling
-    schedule_rm();
+    run_scheduler();
     // FIXME: we need to implement the dispatch function to switch to the scheduled thread
     // dispatch_first_run();
 }

@@ -32,6 +32,13 @@ static int rm_cmp(const void *a, const void *b){
 /* Schedule threads using Rate-Monotonic Scheduling
 */
 void schedule_rm(void){
+
+        #ifdef KERNEL_MODE
+                puts("Scheduling using Rate-Monotonic Scheduling...\n");
+                busy_wait();
+        #else
+                printf("Scheduling using Rate-Monotonic Scheduling...\n");
+        #endif
         if (!ready_queue) {
                 #ifdef KERNEL_MODE
                         puts("Error: ready_queue not initialized!\n");
@@ -54,8 +61,15 @@ void schedule_rm(void){
         heap_node_t node;
         tcb *candidates[MAX_THREADS];
         int candidate_count = 0;
-
         while(heap_remove(ready_queue, &node) == 0) {
+                // Debug info
+                #ifdef KERNEL_MODE
+                        puts("Examining thread ID: ");
+                        putint(node.tcb->tid);
+                        puts(" with period: ");
+                        putint(node.tcb->period);
+                        puts("\n");
+                #endif
                 tcb *thread = node.tcb;
                 if (!thread) continue; // safety check
 
@@ -128,6 +142,14 @@ void schedule_rm(void){
                 }
 
                 // Set the best candidate as running
+                // Print debug info
+                #ifdef KERNEL_MODE
+                        puts("Scheduled thread ID: ");
+                        putint(best_candidate->tid);
+                        puts(" with period: ");
+                        putint(best_candidate->period);
+                        puts("\n");
+                #endif
                 best_candidate->state = THREAD_RUNNING;
                 curr_tid = best_candidate->tid;
                 current_thread = best_candidate;
