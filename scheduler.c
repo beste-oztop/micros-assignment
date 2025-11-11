@@ -5,10 +5,10 @@
 // #include <stdlib.h>
 
 /* Rate-Monotonic Scheduling Implementation */
-extern tcb *micros_threads[MAX_THREADS]; /*Array of pointers to TCBs*/
-extern thread_heap_t* ready_queue;  /*Use the global ready queue*/
-extern int curr_tid; /*Current thread ID*/
-extern tcb *current_thread; /*Current thread pointer*/
+// extern tcb *micros_threads[MAX_THREADS]; /*Array of pointers to TCBs*/
+// extern thread_heap_t* ready_queue;  /*Use the global ready queue*/
+// extern int curr_tid; /*Current thread ID*/
+// extern tcb *current_thread; /*Current thread pointer*/
 
 
 
@@ -48,7 +48,16 @@ void schedule_rm(void){
                 return;
         }
 
-       // Find the highest priority thread in the ready queue 
+
+        #ifdef KERNEL_MODE
+                puts("Current ready queue state:\n");
+                heap_print(ready_queue);        
+        #else
+                printf("Current ready queue state:\n");
+                heap_print(ready_queue);        
+        #endif
+
+        // Find the highest priority thread in the ready queue 
        tcb *curr = (curr_tid>=0 && curr_tid<MAX_THREADS) ? micros_threads[curr_tid] : NULL;
 
        // If current thread is running, check if it should continue or be preempted
@@ -57,10 +66,12 @@ void schedule_rm(void){
                  best_candidate = curr;
         }
 
+
         // Look at the ready queue, find highest priority ready thread
         heap_node_t node;
         tcb *candidates[MAX_THREADS];
         int candidate_count = 0;
+
         while(heap_remove(ready_queue, &node) == 0) {
                 // Debug info
                 #ifdef KERNEL_MODE
@@ -104,42 +115,31 @@ void schedule_rm(void){
                 }
         }
 
-        // If current thread is still best, reinsert it
-        if (best_candidate && best_candidate == curr) {
-                if (heap_insert(ready_queue, curr) != 0) {
-                        #ifdef KERNEL_MODE
-                                puts("Failed to reinsert current thread into ready queue!\n");
-                        #else
-                                printf("Failed to reinsert current thread into ready queue!\n");
-                        #endif
-                }
-        }
-
         // Schedule the best candidate
         if (best_candidate) {
                 // Preempt current thread if different
-                if (curr != best_candidate) {
-                        // Reinsert current thread to the ready queue if still runnable
-                        if (curr && curr->state == THREAD_READY && curr->remaining_time > 0) {
-                                if (heap_insert(ready_queue, curr) != 0) {
-                                        #ifdef KERNEL_MODE
-                                                puts("Failed to reinsert current thread into ready queue!\n");
-                                        #else
-                                                printf("Failed to reinsert current thread into ready queue!\n");
-                                        #endif
-                                }
-                        }
-                       #ifdef KERNEL_MODE
-                                puts("Switching to higher priority thread.\n");
-                                puts("Preempting thread ID: ");
-                                putint(curr_tid);
-                                puts("--> Switching to thread ID: ");
-                                putint(best_candidate->tid);
-                                puts("\n");
-                        #else
-                                printf("Switching to higher priority thread.\n");
-                        #endif
-                }
+                // if (curr != best_candidate) {
+                //         // Reinsert current thread to the ready queue if still runnable
+                //         if (curr && curr->state == THREAD_READY && curr->remaining_time > 0) {
+                //                 if (heap_insert(ready_queue, curr) != 0) {
+                //                         #ifdef KERNEL_MODE
+                //                                 puts("Failed to reinsert current thread into ready queue!\n");
+                //                         #else
+                //                                 printf("Failed to reinsert current thread into ready queue!\n");
+                //                         #endif
+                //                 }
+                //         }
+                //        #ifdef KERNEL_MODE
+                //                 puts("Switching to higher priority thread.\n");
+                //                 puts("Preempting thread ID: ");
+                //                 putint(curr_tid);
+                //                 puts("--> Switching to thread ID: ");
+                //                 putint(best_candidate->tid);
+                //                 puts("\n");
+                //         #else
+                //                 printf("Switching to higher priority thread.\n");
+                //         #endif
+                // }
 
                 // Set the best candidate as running
                 // Print debug info
@@ -150,13 +150,22 @@ void schedule_rm(void){
                         putint(best_candidate->period);
                         puts("\n");
                 #endif
+                // FIXME: Things get messy after this point
                 best_candidate->state = THREAD_RUNNING;
                 curr_tid = best_candidate->tid;
                 current_thread = best_candidate;
         } else {
                 // No runnable threads found
+                #ifdef KERNEL_MODE
+                        puts("No runnable threads found. CPU idle.\n");
+                #endif
                 curr_tid = -1;
                 current_thread = NULL;
         }
 
+        #ifdef KERNEL_MODE
+                puts("Ready queue state after scheduling:\n");
+                heap_print(ready_queue);
+                puts("Scheduling complete.\n");
+        #endif
 }        

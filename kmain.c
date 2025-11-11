@@ -40,6 +40,33 @@ void encodeGdtEntry(uint8_t *target, gdt_t source)
     target[6] |= (source.flags << 4);
 }
 
+
+void save_prev_stack(int prev_stack){
+    current_thread->sp = prev_stack;
+}
+void save_next_stack(){
+    __asm__ volatile ("mov %0, %%edi"::"r"(current_thread->sp));
+    #ifdef KERNEL_MODE
+        puts("Switching to stack pointer: ");
+        putint(current_thread->sp);
+        puts("\n");
+    #endif
+}
+void save_curr_tid(){
+    curr_tid = current_thread->tid;
+}
+
+int next_tid;
+void save_next_tid(){
+    next_tid = current_thread->tid;
+    #ifdef KERNEL_MODE
+        puts("Switching to thread ID: ");
+        putint(next_tid);
+        puts("\n");
+    #endif
+}
+
+
 /* kmain.c: Kernel main function called by the bootloader (GRUB) */
 void kmain(multiboot_info_t* mbd, unsigned long magic_num){
 
@@ -76,10 +103,9 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
     // Initiailize the thread pool
     init_thread_pool();
 
-
     /* Predefined Ci, Ti and max_jobs for [MAX_THREADS] threads */
     static const uint32_t exec_time_predef[MAX_THREADS] = { 2, 2, 3 };   /* .execution_time*/
-    static const uint32_t period_predef[MAX_THREADS]    = { 10, 5, 20 };  /* .period */
+    static const uint32_t period_predef[MAX_THREADS]    = { 5, 10, 20 };  /* .period */
     static const uint32_t max_jobs_predef[MAX_THREADS]  = { 3, 3, 3 };   /* .max_jobs */
 
 
@@ -94,11 +120,14 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
         thread_create(thread_stacks[i], f[i], &schedparams);
     }
 
-    puts("Ready queue looks like this:\n");
-    heap_print(ready_queue);
+    // DEBUG
+    // puts("Ready queue looks like this:\n");
+    // heap_print(ready_queue);
 
-    // FIXME: start scheduling using rate-monotonic scheduling
-    run_scheduler();
-    // FIXME: we need to implement the dispatch function to switch to the scheduled thread
+    // Set the first thread to run
+    current_thread = micros_threads[0];
+    curr_tid = 0;
     // dispatch_first_run();
+    // FIXME: start scheduling using rate-monotonic scheduling
+    dispatcher();
 }

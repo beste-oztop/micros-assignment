@@ -1,12 +1,13 @@
 CC = gcc
 CFLAGS = -m32 -fno-builtin -fno-stack-protector -fno-strict-aliasing -fno-delete-null-pointer-checks -nostdinc -I. -g -Wall -std=c99
 CPPFLAGS = -Wa,--32 -MMD
-# add schedule.o later after it get fixed.
-OBJS = boot.o init.o kmain.o thread.o heap.o scheduler.o dispatch.o helpers.o
+# added schedule.o later after it get fixed.
+OBJS = boot.o init.o kmain.o thread.o heap.o scheduler.o context_switch.o helpers.o
 PROGS = memos-2
 MNT_POINT=/mnt/
 
 all: $(PROGS)
+	as --32 context_switch.s -o context_switch.o
 
 memos-2: $(OBJS)
 	$(LD) -m elf_i386 -T memos.ld -o $@ $^

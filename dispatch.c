@@ -1,10 +1,6 @@
 #include "dispatch.h"
 
-extern int curr_tid;
-extern tcb *current_thread;
-extern tcb *micros_threads[MAX_THREADS];
-
-void dispatch(void){
+void dispatcher(void){
     if(!current_thread){
         #ifdef KERNEL_MODE
             puts("No current thread to dispatch!\n");
@@ -22,20 +18,33 @@ void dispatch(void){
 
     uint32_t new_sp = current_thread->sp;    
 
-
-    // Inline assembly to perform context switch
+    // Inline assembly to perform context switch as specified
     __asm__ __volatile__ (
-        "movl %%esp, %0\n\t"   // Save old ESP
-        "popl %%gs\n\t"       // Restore segment registers
-        "popl %%fs\n\t"
-        "popl %%es\n\t"
-        "popl %%ds\n\t"
-        "popal\n\t"       // Restore general-purpose registers
-        "popfl\n\t"      // Restore EFLAGS
-        "retl\n\t"        // Return to the thread's EIP
+        "pushfl\n\t"               // Save EFLAGS
+        "pushal\n\t"               // Save general-purpose registers
+        "pushw %%ds\n\t"           // Save segment registers
+        "pushw %%es\n\t"
+        "pushw %%fs\n\t"
+        "pushw %%gs\n\t"
+        "movl %%esp, %%eax\n\t"    // Save current ESP into EAX
+        "pushl %%eax\n\t"          // Push it as argument
+        "call save_prev_stack\n\t"
+        "call save_curr_tid\n\t"
+        "call schedule_rm\n\t"
+        "call save_next_tid\n\t"
+        "call save_next_stack\n\t"
+        "movl %0, %%edi\n\t"       // Load new_sp into EDI
+        "movl %%edi, %%esp\n\t"    // Set new ESP
+        "popw %%gs\n\t"            // Restore segment registers
+        "popw %%fs\n\t"
+        "popw %%es\n\t"
+        "popw %%ds\n\t"
+        "popal\n\t"                // Restore general-purpose registers
+        "popfl\n\t"                // Restore EFLAGS
+        "retl\n\t"                 // Return to the thread's EIP
         :
         : "r" (new_sp)
-        : "memory"
+        : "memory", "eax", "edi"
     );
 
 }
@@ -58,91 +67,30 @@ void dispatch_first_run(void){
         puts("\n");
     #endif
 
-    dispatch();
+    uint32_t new_sp = current_thread->sp;
+
+    __asm__ __volatile__ (
+        "movl %0, %%edi\n\t"     /* place new stack pointer into %edi */
+        "call save_next_stack\n\t"
+        "movl %%edi, %%esp\n\t"  /* switch to the new thread's stack */
+        "popw %%gs\n\t"
+        "popw %%fs\n\t"
+        "popw %%es\n\t"
+        "popw %%ds\n\t"
+        "popal\n\t"
+        "popfl\n\t"
+        "sti\n\t"
+        "retl\n\t"
+        :
+        : "r" (new_sp)
+        : "memory", "edi"
+    );
 }
 
 
 /* Voluntarily yield the CPU from the current thread */
 void yield(void){
-    save_context_and_schedule();
-}
-
-void save_context_and_schedule(void){
-    tcb *old_thread = current_thread;
-
-    if(!old_thread){
-        #ifdef KERNEL_MODE
-            puts("No current thread to save context from!\n");
-        #else
-            printf("No current thread to save context from!\n");
-        #endif
-        return;
-
-        // Just schedule
-        schedule_rm();
-        if(current_thread){
-            dispatch_first_run();
-        }
-    }
-
-    // There is an existing thread, need to context switch
-
-    __asm__ __volatile__ (
-        "pushfl\n\t"      // Save EFLAGS
-        "pushal\n\t"      // Save general-purpose registers
-        "pushw %%ds\n\t"   // Save segment registers
-        "pushw %%es\n\t"
-        "pushw %%fs\n\t"
-        "pushw %%gs\n\t"
-        "movl %%esp, %0\n\t"   // Save ESP to old_thread->sp TCB
-        : "=m" (old_thread->sp)
-        :
-        : "memory"
-    );
-
-
-    // Now schedule
-    schedule_rm();
-
-    if (current_thread == old_thread) {
-        // Same thread, just restore context
-        __asm__ __volatile__ (
-            "movl %0, %%esp\n\t"   // Restore ESP from old_thread->sp
-            "popw %%gs\n\t"       // Restore segment registers
-            "popw %%fs\n\t"
-            "popw %%es\n\t"
-            "popw %%ds\n\t"
-            "popal\n\t"       // Restore general-purpose registers
-            "popfl\n\t"      // Restore EFLAGS
-            :
-            : "m" (old_thread->sp)
-            : "memory"
-        );
-    } else {
-        // Different thread, dispatch to new thread
-        dispatch();
-    }
-        
+    dispatcher();
 }
 
 
-
-void run_scheduler(void){
-
-    #ifdef KERNEL_MODE
-        puts("Running scheduler...\n");
-    #endif
-
-    schedule_rm();
-
-    if(current_thread){
-        dispatch_first_run();
-    } else {
-        #ifdef KERNEL_MODE
-            puts("No thread scheduled to run!\n");
-        #else
-            printf("No thread scheduled to run!\n");
-        #endif
-    }
-
-}

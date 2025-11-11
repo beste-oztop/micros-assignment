@@ -38,7 +38,7 @@ char * itoa(int value, char * str, int base)
 }
 
 void busy_wait(){
-    for(volatile long i = 0; i < 100000000; i++){
+    for(volatile long i = 0; i < 10000000; i++){
         __asm__ __volatile__ ("nop");
     }
 }

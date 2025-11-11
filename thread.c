@@ -258,24 +258,14 @@ int thread_func(){
 
 
     while(1){
-        puts("Thread ");
-        puts(buff);
-        puts(" running iterations:\n");
-        putint(counter[id-1] + 1);
-        puts("\n");
-
         for (i = 0; i < 10; i++){
-            puts("   ");
             puts(buff);
-            putc('\n');
             busy_wait();
         }
-        
-        puts("Thread ");
-        puts(buff);
-        puts(" yielding...\n");
-        yield();
-
+        putc('\n');
+        if(1){ // only if preemptive scheduling is enabled
+            yield();
+        }    
         if(++counter[id-1] == 3)  // run 3 times, counter is global array  -> this needs to come from args
             break;
     }
@@ -287,3 +277,5 @@ int thread_func(){
     done[id-1] = TRUE;
     return 0;
 }
+
+

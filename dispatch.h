@@ -12,10 +12,8 @@ extern tcb *current_thread;
 extern tcb *micros_threads[MAX_THREADS];
 
 /* Prototypes for dispatching / scheduling */
-void dispatch(void);
+void dispatcher(void);
 void dispatch_first_run(void);
 void yield(void);
-void save_context_and_schedule(void);
-void run_scheduler(void);
 
 #endif // DISPATCH_H
