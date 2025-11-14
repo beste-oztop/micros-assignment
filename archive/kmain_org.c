@@ -85,7 +85,7 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
     encodeGdtEntry(gdt_entries[2], kernel_data);
 
     set_gdt(sizeof(gdt_entries) - 1, (uint32_t)&gdt_entries);
-    // puts("GDT set up complete.\n");
+    puts("GDT set up complete.\n");
 
     __asm__ volatile ("ljmp $0x08, $.reload_CS \n"  // long jump to reload CS -- 0x08 is the kernelcode segment
                       ".reload_CS: \n"
@@ -99,7 +99,7 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
                       :  /* no input operands */
                       : "ax");  /* clobbered registers, compiler should not assume on ax value*/
 
-    // puts("Segment registers reloaded.\n");
+    puts("Segment registers reloaded.\n");
     // thread management ---------------------------------------------------------
 
     // Initiailize the thread pool
@@ -118,8 +118,8 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
 
         // Read from predefined args
         struct_schedparams_t schedparams = { .execution_time = exec_time_predef[i], .period = period_predef[i], .max_jobs = max_jobs_predef[i] };
-        void *stack_top = (void*)(&thread_stacks[i][STACK_SIZE_PER_THREAD-1]);
-        thread_create(stack_top, f[i], &schedparams);
+        void *stack_top = (void*)(&thread_stacks[i][STACK_SIZE_PER_THREAD]);
+        thread_create(thread_stacks[i], f[i], &schedparams);
     }
 
     // DEBUG
@@ -128,17 +128,11 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
 
     // Set the first thread to run
     current_thread = micros_threads[0];
-    // puts("Starting first thread with address: ");
-    // putint(current_thread);
-    // puts("\n");
+    puts("Starting first thread with address: ");
+    putint(current_thread);
+    puts("\n");
     curr_tid = 0;
     // dispatch_first_run();
-    // TODO create the runque with rate-monotonic scheduling. After that each thread should be scheduled according to RM
-    // We don't need to call RM everytime here, since it's not preemptive scheduling. Just need to create the runqueue once.
     // FIXME: start scheduling using rate-monotonic scheduling
     dispatch_first_run();
-    //halt the CPU if we ever return here
-    while(1){
-        __asm__ volatile ("hlt");
-    }
 }

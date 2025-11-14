@@ -36,4 +36,5 @@ extern uint32_t *f[MAX_THREADS];        /*Array of pointers to function addresse
 extern tcb *micros_threads[MAX_THREADS]; /*Array of pointers to TCBs*/
 extern thread_heap_t* ready_queue; /* Ready queue for threads */
 extern uint8_t thread_stacks[MAX_THREADS][STACK_SIZE_PER_THREAD] __attribute__((aligned(16))); /* Statically allocated stacks */
+// extern uint32_t thread_stacks[MAX_THREADS]; /* stack pointers for each thread */
 #endif /* THREAD_H */

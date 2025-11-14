@@ -9,7 +9,7 @@ tcb *current_thread = NULL;     /* pointer to currently running TCB */
 kbool_t done[MAX_THREADS] = {0}; // flags to indicate if thread is done
 int counter[MAX_THREADS] = {0};  // keeps track of how many times each thread has run
 uint32_t *f[MAX_THREADS] = {0};  // function pointers for each thread
-// uint32_t *stacks[MAX_THREADS] = {0};  // stack pointers for each thread
+uint32_t *stacks[MAX_THREADS] = {0};  // stack pointers for each thread
 tcb *micros_threads[MAX_THREADS] = {0};  /*Array of pointers to TCBs*/
 thread_heap_t* ready_queue = NULL; // global ready queue heap
 
@@ -17,6 +17,8 @@ thread_heap_t* ready_queue = NULL; // global ready queue heap
 /* we don't have access to malloc in kernel mode, so we can statically allocate the thread pool */
 /* Statically allocate stacks (4KB each, aligned) */
 uint8_t thread_stacks[MAX_THREADS][STACK_SIZE_PER_THREAD] __attribute__((aligned(16)));
+
+// uint32_t thread_stacks[MAX_THREADS] = {0}; /* stack pointers for each thread */
 
 /* Initialize the thread pool - must be called before using threads */
 static tcb tcb_pool[MAX_THREADS];
@@ -41,14 +43,16 @@ void exit_thread(void){
         // puts("danger");
         // dispatch_first_run();
     }*/
-
+    puts("exiting thread ID: ");
+    putint(curr_tid);
+    puts("\n");
     tcb* curr_thread = get_current_thread(curr_tid);
     // here we need to check if job of thread finished or not.
     // If finished, set state to 0, otherwise update remaining execution time
     if(curr_thread->is_periodic){
         curr_thread->jobs_done++;
         if(curr_thread->jobs_done >= curr_thread->max_jobs){
-            curr_thread->state = THREAD_EXITED;
+            curr_thread->state = THREAD_EXITED;  // Thread is done - don't reinsert
         }else{
             curr_thread->remaining_time = curr_thread->execution_time;
             curr_thread->next_arrival += curr_thread->period;
@@ -56,35 +60,37 @@ void exit_thread(void){
             // Reinsert into ready queue
             if (ready_queue) {
                 if (heap_insert(ready_queue, curr_thread) != 0) {
-                    #ifdef KERNEL_MODE
                         puts("Failed to reinsert thread into ready queue!\n");
-                    #else
-                        printf("Failed to reinsert thread into ready queue!\n");
-                    #endif
                 }
             }
         }
+    }
+
+    // Schedule the next thread
+    schedule_rm();  // This picks the next thread and sets current_thread
+
+    if(current_thread){
+        // Switch to the next thread
+        dispatch_first_run();  // or dispatcher() depending on your design
+    } else {
+        // No more threads - halt
+        puts("All threads finished!\n");
+        while(1) { __asm__ volatile ("hlt"); }
     }
 }
 
 
 /* Initialize the thread pool - must be called before using threads */
 void init_thread_pool(void) {
-
     if (!ready_queue) {
         ready_queue = heap_create(MAX_THREADS);
         if (!ready_queue) {
-            #ifdef KERNEL_MODE
-                puts("Failed to create ready queue!\n");
-            #else
-                printf("Failed to create ready queue!\n");
-            #endif
+            puts("Failed to create ready queue!\n");
             return;
         }
     }
     for (int i = 0; i < MAX_THREADS; i++) {
         micros_threads[i] = &tcb_pool[i];
-        // memset(micros_threads[i], 0, sizeof(tcb));
         micros_threads[i]->tid = i;
         micros_threads[i]->state = THREAD_IDLE;  // Start as idle
     }
@@ -104,14 +110,23 @@ int get_tcb(){
 
     we can assume threads are taken from the pool in order from lowest to highest TID until all threads have been assigned work*/
     for(int i = 0; i < MAX_THREADS; i++){
-        if(micros_threads[i] && micros_threads[i]->state == THREAD_IDLE){
+        // puts("Checking TCB ID: ");
+        // putint(i);
+        // puts("\n");
+        // puts("State: ");
+        // putint(micros_threads[i]->state);
+        // puts("\n");
+        if(micros_threads[i]->state == THREAD_IDLE){
+            // puts("Allocating TCB ID: ");
+            // putint(i);
+            // puts("\n");
             return i;
         }
     }
     return -1;
 }
 
-
+// Get pointer to TCB by TID --> this is 0-based internally
 tcb* get_current_thread(int tid){
     return micros_threads[tid];
 }
@@ -163,19 +178,15 @@ int thread_create(void *stack, void *func, void *args){
     int C = sched_params->execution_time;
     int T = sched_params->period;
 
-    #ifdef KERNEL_MODE
-        puts("Creating thread with execution_time=");
-        putint(sched_params->execution_time);
-        puts(", period=");
-        putint(sched_params->period);
-        puts(", max_jobs=");
-        putint(sched_params->max_jobs);
-        puts("\n");
-    #else
-        printf("Creating thread (not kernel mode)!\n");
-    #endif
+    // puts("Creating thread with execution_time=");
+    // putint(sched_params->execution_time);
+    // puts(", period=");
+    // putint(sched_params->period);
+    // puts(", max_jobs=");
+    // putint(sched_params->max_jobs);
+    // puts("\n");
 
-    
+
     int new_tcb = -1;
     uint16_t ds = 0x10, es = 0x10, fs = 0x10, gs = 0x10;  // data segment selectors
 
@@ -183,27 +194,20 @@ int thread_create(void *stack, void *func, void *args){
 
     /* Checking if there was an issue creating the thread...*/
     if(new_tcb == -1){
-        #ifdef KERNEL_MODE
-            puts("No TCB available!\n");  // if we run out of TCBs, means no more thread waiting to be created
-        #else
-            printf("No TCB available!\n");
-        #endif
+        puts("No TCB available!\n");  // if we run out of TCBs, means no more thread waiting to be created
         return -1;
     }
 
     *(((uint32_t *) stack) - 0) = (uint32_t) exit_thread;
     stack = (void *)(((uint32_t *) stack) - 1);
-
+    //FIXME this function needs to be fixed to properly setup the stack for context switching
     /* Found new TCB*/
-    micros_threads[new_tcb]->tid = new_tcb;
+    micros_threads[new_tcb]->tid = new_tcb;  // TID is 0-based
     micros_threads[new_tcb]->bp = (uint32_t) stack;
     micros_threads[new_tcb]->entry = (uint32_t) func;  // entry point to function
     micros_threads[new_tcb]->flag = 0;
     micros_threads[new_tcb]->next = NULL;
-    micros_threads[new_tcb]->left_child = NULL;
-    micros_threads[new_tcb]->right_child = NULL;
-    micros_threads[new_tcb]->parent = NULL;
-    micros_threads[new_tcb]->state = 1; // ready state
+    micros_threads[new_tcb]->state = THREAD_READY; // ready state
     micros_threads[new_tcb]->execution_time = C;
     micros_threads[new_tcb]->remaining_time = C;
     micros_threads[new_tcb]->period = T;
@@ -218,7 +222,7 @@ int thread_create(void *stack, void *func, void *args){
 
     /* Now fix the stack pointer to fake a context switch*/
     /*EIP*/ *(((uint32_t *) stack) - 0) = micros_threads[new_tcb]->entry;
-    /*FLG*/ *(((uint32_t *) stack) - 1) = 0 | (1 << 9); // Set IF for preemption
+    /*FLG*/ *(((uint32_t *) stack) - 1) = 0 | (1 << 9);
     /*EAX*/ *(((uint32_t *) stack) - 2) = 0;
     /*ECX*/ *(((uint32_t *) stack) - 3) = 0;
     /*EDX*/ *(((uint32_t *) stack) - 4) = 0;
@@ -237,35 +241,97 @@ int thread_create(void *stack, void *func, void *args){
     // TODO : store created thread in ready queue. Priority should be determined based on T value (rate-monotonic scheduling)
     if (ready_queue) {
         if (heap_insert(ready_queue, micros_threads[new_tcb]) != 0) {
-            #ifdef KERNEL_MODE
-                puts("Failed to insert thread into ready queue!\n");
-            #else
-                printf("Failed to insert thread into ready queue!\n");
-            #endif
+            puts("Failed to insert thread into ready queue!\n");
         }
     }
     curr_tid = new_tcb;
-    return new_tcb + 1;  // return thread id (1-based)
+    return new_tcb;  // return thread id (0-based)
 }
 
 
+// copilot provided code
+// int thread_create(void *stack, void *func, void *args){
+//     struct_schedparams_t* sched_params = (struct_schedparams_t*) args;
+//     int C = sched_params->execution_time;
+//     int T = sched_params->period;
+
+//     int new_tcb = -1;
+//     uint16_t ds = 0x10, es = 0x10, fs = 0x10, gs = 0x10;
+
+//     new_tcb = get_tcb();
+//     if(new_tcb == -1){
+//         puts("No TCB available!\n");
+//         return -1;
+//     }
+
+//     /* Found new TCB*/
+//     micros_threads[new_tcb]->tid = new_tcb;
+//     micros_threads[new_tcb]->bp = (uint32_t) stack;
+//     micros_threads[new_tcb]->entry = (uint32_t) func;
+//     micros_threads[new_tcb]->flag = 0;
+//     micros_threads[new_tcb]->next = NULL;
+//     micros_threads[new_tcb]->state = THREAD_READY;
+//     micros_threads[new_tcb]->execution_time = C;
+//     micros_threads[new_tcb]->remaining_time = C;
+//     micros_threads[new_tcb]->period = T;
+//     micros_threads[new_tcb]->priority = (T > 0) ? T : 0xFFFFFFFF;
+//     micros_threads[new_tcb]->next_arrival = 0;
+//     micros_threads[new_tcb]->max_jobs = sched_params->max_jobs;
+//     micros_threads[new_tcb]->jobs_done = 0;
+//     micros_threads[new_tcb]->is_periodic = (T > 0) ? TRUE : FALSE;
+
+//     /* Set up stack: retl will pop EIP, but the function needs a return address already on stack */
+//     // First push the return address that the function will use when it returns
+//     *(((uint32_t *) stack) - 1) = (uint32_t) exit_thread;
+
+//     // Now set up context that dispatch_first_run will restore
+//     /*EIP*/        *(((uint32_t *) stack) - 2) = (uint32_t) func;
+//     /*FLG*/        *(((uint32_t *) stack) - 3) = 0 | (1 << 9);
+//     /*EAX*/        *(((uint32_t *) stack) - 4) = 0;
+//     /*ECX*/        *(((uint32_t *) stack) - 5) = 0;
+//     /*EDX*/        *(((uint32_t *) stack) - 6) = 0;
+//     /*EBX*/        *(((uint32_t *) stack) - 7) = 0;
+//     /*ESP*/        *(((uint32_t *) stack) - 8) = (uint32_t)(((uint32_t *) stack) - 1);  // Points to exit_thread
+//     /*EBP*/        *(((uint32_t *) stack) - 9) = (uint32_t)(((uint32_t *) stack) - 1);
+//     /*ESI*/        *(((uint32_t *) stack) - 10) = 0;
+//     /*EDI*/        *(((uint32_t *) stack) - 11) = 0;
+//     /*DS*/         *(((uint16_t *) stack) - 23) = ds;
+//     /*ES*/         *(((uint16_t *) stack) - 24) = es;
+//     /*FS*/         *(((uint16_t *) stack) - 25) = fs;
+//     /*GS*/         *(((uint16_t *) stack) - 26) = gs;
+
+//     /* Stack pointer points to GS (the first thing that will be popped) */
+//     micros_threads[new_tcb]->sp = (uint32_t)(((uint16_t *) stack) - 26);
+
+//     if (ready_queue) {
+//         if (heap_insert(ready_queue, micros_threads[new_tcb]) != 0) {
+//             puts("Failed to insert thread into ready queue!\n");
+//         }
+//     }
+//     curr_tid = new_tcb;
+//     return new_tcb;
+// }
+
 
 int thread_func(){
-    int id = thread_ids++;  //  id is 0 based
+    int id = thread_ids++;  //  id is 0 based  // FIXME this does not seem right
     int i;
     char buff[16];
     itoa(id, buff, 10);
 
-
+    puts("Thread ");
+    putint(id);
+    puts(" started!   ");
     while(1){
         for (i = 0; i < 10; i++){
             puts(buff);
-            busy_wait();
+            // busy_wait();
+            // puts("1");
         }
-        putc('\n');
+        // putc('\n');
         if(1){ // only if preemptive scheduling is enabled
-            yield();
-        }    
+            // yield();
+        }
         if(++counter[id-1] == 3)  // run 3 times, counter is global array  -> this needs to come from args
             break;
     }
@@ -275,6 +341,8 @@ int thread_func(){
     puts(buff);
     puts(" !\n");
     done[id-1] = TRUE;
+
+
     return 0;
 }
 

@@ -2,21 +2,17 @@
 
 void dispatcher(void){
     if(!current_thread){
-        #ifdef KERNEL_MODE
-            puts("No current thread to dispatch!\n");
-        #else
-            printf("No current thread to dispatch!\n");
-        #endif
-        return;
+    puts("No current thread to dispatch!\n");
+    return;
     }
 
-    #ifdef KERNEL_MODE
-        puts("Dispatching to thread ID: ");
-        putint(current_thread->tid);
-        puts("\n");
-    #endif
 
-    uint32_t new_sp = current_thread->sp;    
+    puts("Dispatching to thread ID: ");
+    putint(current_thread->tid);
+    puts("\n");
+
+
+    uint32_t new_sp = current_thread->sp;
 
     // Inline assembly to perform context switch as specified
     __asm__ __volatile__ (
@@ -47,31 +43,28 @@ void dispatcher(void){
         : "memory", "eax", "edi"
     );
 
+    puts("Returned to dispatcher - this should never happen!\n");
 }
 
 
 void dispatch_first_run(void){
 
     if(!current_thread){
-        #ifdef KERNEL_MODE
-            puts("No current thread to dispatch!\n");
-        #else
-            printf("No current thread to dispatch!\n");
-        #endif
+        puts("No current thread to dispatch!\n");
         return;
     }
 
-    #ifdef KERNEL_MODE
-        puts("Dispatching (first run) to thread ID: ");
-        putint(current_thread->tid);
-        puts("\n");
-    #endif
+
+    puts("Dispatching (first run) to thread ID: ");
+    putint(current_thread->tid);
+    puts("\n");
+
 
     uint32_t new_sp = current_thread->sp;
 
     __asm__ __volatile__ (
         "movl %0, %%edi\n\t"     /* place new stack pointer into %edi */
-        "call save_next_stack\n\t"
+        // "call save_next_stack\n\t"
         "movl %%edi, %%esp\n\t"  /* switch to the new thread's stack */
         "popw %%gs\n\t"
         "popw %%fs\n\t"
@@ -82,7 +75,7 @@ void dispatch_first_run(void){
         "sti\n\t"
         "retl\n\t"
         :
-        : "r" (new_sp)
+        : "r" (new_sp)  // input: new_sp in any general register
         : "memory", "edi"
     );
 }

@@ -35,7 +35,7 @@ void schedule_rm(void){
 
         #ifdef KERNEL_MODE
                 puts("Scheduling using Rate-Monotonic Scheduling...\n");
-                busy_wait();
+                // busy_wait();
         #else
                 printf("Scheduling using Rate-Monotonic Scheduling...\n");
         #endif
@@ -51,13 +51,13 @@ void schedule_rm(void){
 
         #ifdef KERNEL_MODE
                 puts("Current ready queue state:\n");
-                heap_print(ready_queue);        
+                heap_print(ready_queue);
         #else
                 printf("Current ready queue state:\n");
-                heap_print(ready_queue);        
+                heap_print(ready_queue);
         #endif
 
-        // Find the highest priority thread in the ready queue 
+        // Find the highest priority thread in the ready queue
        tcb *curr = (curr_tid>=0 && curr_tid<MAX_THREADS) ? micros_threads[curr_tid] : NULL;
 
        // If current thread is running, check if it should continue or be preempted
@@ -103,7 +103,7 @@ void schedule_rm(void){
                 }
 
         }
-       
+
         for (int i = 0; i < candidate_count; i++) {
                 // Reinsert candidates back into the ready queue
                 if (heap_insert(ready_queue, candidates[i]) != 0) {
@@ -114,7 +114,9 @@ void schedule_rm(void){
                         #endif
                 }
         }
-
+            while(1){
+        __asm__ volatile ("hlt");
+    }
         // Schedule the best candidate
         if (best_candidate) {
                 // Preempt current thread if different
@@ -168,4 +170,4 @@ void schedule_rm(void){
                 heap_print(ready_queue);
                 puts("Scheduling complete.\n");
         #endif
-}        
+}

@@ -65,6 +65,7 @@ struct thread_control_block {
     uint32_t sp; // stack pointer
     uint32_t entry; // entry point
     int flag; // general purpose flag
+    int state; // state of the thread (e.g., ready, running, exited) 0 - Idle, 1 - Busy
 
     uint32_t execution_time;    // C: total execution time per job
     uint32_t remaining_time;    // C': remaining time for current job
@@ -78,11 +79,10 @@ struct thread_control_block {
     kbool_t is_periodic;        // true if this is a periodic task
 
     struct thread_control_block *next; // next thread in the queue
-    struct thread_control_block *left_child; // left child in the tree
-    struct thread_control_block *right_child; // right child in the tree
-    struct thread_control_block *parent; // parent thread
     struct thread_control_block *prev; // previous thread in the queue
-    int state; // state of the thread (e.g., ready, running, exited) 0 - Idle, 1 - Busy
+    // struct thread_control_block *left_child; // left child in the tree
+    // struct thread_control_block *right_child; // right child in the tree
+    // struct thread_control_block *parent; // parent thread
 };
 
 // in the heap we should have [thread priority, pointer to thread control block (TCB)]
@@ -90,7 +90,7 @@ typedef struct heap_node
 {
     priority_t priority;   // The key for comparison (lower = higher priority)
     tcb* tcb;           // Pointer to the thread control block
-} heap_node_t;
+} heap_node_t  __attribute__((packed));
 
 // this heap needs to be a min-heap since lower values have higher priority
 typedef struct Heap {
