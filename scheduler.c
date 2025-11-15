@@ -31,31 +31,17 @@ static int rm_cmp(const void *a, const void *b){
 
 /* Schedule threads using Rate-Monotonic Scheduling
 */
-void schedule_rm(void){
+void schedule_rm_org(void){
+         __asm__ volatile ("cli");  // Clear interrupt flag
 
-        #ifdef KERNEL_MODE
-                puts("Scheduling using Rate-Monotonic Scheduling...\n");
-                // busy_wait();
-        #else
-                printf("Scheduling using Rate-Monotonic Scheduling...\n");
-        #endif
+        puts("Scheduling using Rate-Monotonic Scheduling...  / ");
         if (!ready_queue) {
-                #ifdef KERNEL_MODE
-                        puts("Error: ready_queue not initialized!\n");
-                #else
-                        printf("Error: ready_queue not initialized!\n");
-                #endif
+                puts("Error: ready_queue not initialized!\n");
                 return;
         }
 
-
-        #ifdef KERNEL_MODE
-                puts("Current ready queue state:\n");
-                heap_print(ready_queue);
-        #else
-                printf("Current ready queue state:\n");
-                heap_print(ready_queue);
-        #endif
+        puts("Current ready queue state:\n");
+        heap_print(ready_queue);
 
         // Find the highest priority thread in the ready queue
        tcb *curr = (curr_tid>=0 && curr_tid<MAX_THREADS) ? micros_threads[curr_tid] : NULL;
@@ -74,13 +60,12 @@ void schedule_rm(void){
 
         while(heap_remove(ready_queue, &node) == 0) {
                 // Debug info
-                #ifdef KERNEL_MODE
-                        puts("Examining thread ID: ");
-                        putint(node.tcb->tid);
-                        puts(" with period: ");
-                        putint(node.tcb->period);
-                        puts("\n");
-                #endif
+
+                puts("Examining thread ID: ");
+                putint(node.tcb->tid);
+                puts(" with period: ");
+                putint(node.tcb->period);
+                puts(" / ");
                 tcb *thread = node.tcb;
                 if (!thread) continue; // safety check
 
@@ -107,16 +92,12 @@ void schedule_rm(void){
         for (int i = 0; i < candidate_count; i++) {
                 // Reinsert candidates back into the ready queue
                 if (heap_insert(ready_queue, candidates[i]) != 0) {
-                        #ifdef KERNEL_MODE
-                                puts("Failed to reinsert thread into ready queue!\n");
-                        #else
-                                printf("Failed to reinsert thread into ready queue!\n");
-                        #endif
+                        puts("Failed to reinsert thread into ready queue!\n");
                 }
         }
-            while(1){
-        __asm__ volatile ("hlt");
-    }
+//             while(1){
+//         __asm__ volatile ("hlt");
+//     }
         // Schedule the best candidate
         if (best_candidate) {
                 // Preempt current thread if different
@@ -170,4 +151,88 @@ void schedule_rm(void){
                 heap_print(ready_queue);
                 puts("Scheduling complete.\n");
         #endif
+
+        // Re-enable interrupts at the end
+        __asm__ volatile ("sti");  // Set interrupt flag
+}
+
+
+/* Schedule threads using Rate-Monotonic Scheduling */
+void schedule_rm(void){
+    __asm__ volatile ("cli");  // Disable interrupts
+
+    puts("RM Scheduler called\n");
+
+    if (!ready_queue) {
+        puts("Error: ready_queue not initialized!\n");
+        __asm__ volatile ("sti");
+        return;
+    }
+
+    // Temporarily store all threads we examine
+    heap_node_t node;
+    tcb *candidates[MAX_THREADS];
+    int candidate_count = 0;
+    tcb *best_thread = NULL;
+
+    // Remove all threads from heap and find the best one
+    while (heap_remove(ready_queue, &node) == 0) {
+        tcb *thread = node.tcb;
+
+        if (!thread) continue;
+
+        // Skip exited threads
+        if (thread->state == THREAD_EXITED) {
+            puts("Skipping exited thread ");
+            putint(thread->tid);
+            puts("\n");
+            continue;
+        }
+
+        // Skip threads that completed all jobs
+        if (thread->is_periodic && thread->jobs_done >= thread->max_jobs) {
+            puts("Thread ");
+            putint(thread->tid);
+            puts(" completed all jobs\n");
+            thread->state = THREAD_EXITED;
+            continue;
+        }
+
+        // Store this candidate
+        candidates[candidate_count++] = thread;
+
+        // Keep track of best (first valid thread from min-heap is best)
+        if (!best_thread) {
+            best_thread = thread;
+        }
+    }
+
+    // Put all candidates EXCEPT the best one back into the ready queue
+    for (int i = 0; i < candidate_count; i++) {
+        if (candidates[i] != best_thread) {
+            if (heap_insert(ready_queue, candidates[i]) != 0) {
+                puts("Failed to reinsert thread!\n");
+            }
+        }
+    }
+
+    if (best_thread) {
+        // Set as current thread
+        best_thread->state = THREAD_RUNNING;
+        current_thread = best_thread;
+        curr_tid = best_thread->tid;
+
+        puts("Scheduled thread ID: ");
+        putint(curr_tid);
+        puts(" (period=");
+        putint(best_thread->period);
+        puts(")\n");
+    } else {
+        // No runnable threads
+        puts("No runnable threads found!\n");
+        current_thread = NULL;
+        curr_tid = -1;
+    }
+
+    __asm__ volatile ("sti");  // Re-enable interrupts
 }

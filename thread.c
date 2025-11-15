@@ -71,12 +71,14 @@ void exit_thread(void){
 
     if(current_thread){
         // Switch to the next thread
-        dispatch_first_run();  // or dispatcher() depending on your design
+        // dispatch_first_run();  // or dispatcher() depending on your design
+        dispatcher();
     } else {
         // No more threads - halt
         puts("All threads finished!\n");
         while(1) { __asm__ volatile ("hlt"); }
     }
+    while(1) { __asm__ volatile ("hlt"); }
 }
 
 
@@ -171,7 +173,7 @@ if a func returns, that TCB slot can be used later for some other new func.
 does subsequent mean, we should immediately use released TCB? I think our get_tcb function already handles this.
 
 if max num of threads is reached, we need to deal with that case as well.*/
-int thread_create(void *stack, void *func, void *args){
+int thread_create_org(void *stack, void *func, void *args){
     /* args: struct_schedparams_t -> specifies the C and T values for the thread */
     // cast args to sched params
     struct_schedparams_t* sched_params = (struct_schedparams_t*) args;
@@ -248,72 +250,92 @@ int thread_create(void *stack, void *func, void *args){
     return new_tcb;  // return thread id (0-based)
 }
 
+int thread_create(void *stack, void *func, void *args){
+    struct_schedparams_t* sched_params = (struct_schedparams_t*) args;
+    int C = sched_params->execution_time;
+    int T = sched_params->period;
 
-// copilot provided code
-// int thread_create(void *stack, void *func, void *args){
-//     struct_schedparams_t* sched_params = (struct_schedparams_t*) args;
-//     int C = sched_params->execution_time;
-//     int T = sched_params->period;
+    int new_tcb = -1;
+    uint16_t ds = 0x10, es = 0x10, fs = 0x10, gs = 0x10;
 
-//     int new_tcb = -1;
-//     uint16_t ds = 0x10, es = 0x10, fs = 0x10, gs = 0x10;
+    new_tcb = get_tcb();
+    if(new_tcb == -1){
+        puts("No TCB available!\n");
+        return -1;
+    }
 
-//     new_tcb = get_tcb();
-//     if(new_tcb == -1){
-//         puts("No TCB available!\n");
-//         return -1;
-//     }
+    /* Found new TCB*/
+    micros_threads[new_tcb]->tid = new_tcb;
+    micros_threads[new_tcb]->bp = (uint32_t) stack;
+    micros_threads[new_tcb]->entry = (uint32_t) func;
+    micros_threads[new_tcb]->flag = 0;
+    micros_threads[new_tcb]->next = NULL;
+    micros_threads[new_tcb]->state = THREAD_READY;
+    micros_threads[new_tcb]->execution_time = C;
+    micros_threads[new_tcb]->remaining_time = C;
+    micros_threads[new_tcb]->period = T;
+    micros_threads[new_tcb]->priority = (T > 0) ? T : 0xFFFFFFFF;
+    micros_threads[new_tcb]->next_arrival = 0;
+    micros_threads[new_tcb]->max_jobs = sched_params->max_jobs;
+    micros_threads[new_tcb]->jobs_done = 0;
+    micros_threads[new_tcb]->is_periodic = (T > 0) ? TRUE : FALSE;
 
-//     /* Found new TCB*/
-//     micros_threads[new_tcb]->tid = new_tcb;
-//     micros_threads[new_tcb]->bp = (uint32_t) stack;
-//     micros_threads[new_tcb]->entry = (uint32_t) func;
-//     micros_threads[new_tcb]->flag = 0;
-//     micros_threads[new_tcb]->next = NULL;
-//     micros_threads[new_tcb]->state = THREAD_READY;
-//     micros_threads[new_tcb]->execution_time = C;
-//     micros_threads[new_tcb]->remaining_time = C;
-//     micros_threads[new_tcb]->period = T;
-//     micros_threads[new_tcb]->priority = (T > 0) ? T : 0xFFFFFFFF;
-//     micros_threads[new_tcb]->next_arrival = 0;
-//     micros_threads[new_tcb]->max_jobs = sched_params->max_jobs;
-//     micros_threads[new_tcb]->jobs_done = 0;
-//     micros_threads[new_tcb]->is_periodic = (T > 0) ? TRUE : FALSE;
+    /* Set up the stack frame - careful with pointer arithmetic! */
+    uint32_t *sp = (uint32_t *)stack;
 
-//     /* Set up stack: retl will pop EIP, but the function needs a return address already on stack */
-//     // First push the return address that the function will use when it returns
-//     *(((uint32_t *) stack) - 1) = (uint32_t) exit_thread;
+    // Stack layout (addresses decrease as we go down):
+    // sp[0]   = exit_thread (return address)
+    // sp[-1]  = EIP
+    // sp[-2]  = EFLAGS
+    // sp[-3]  = EAX
+    // sp[-4]  = ECX
+    // sp[-5]  = EDX
+    // sp[-6]  = EBX
+    // sp[-7]  = ESP (saved - points to exit_thread)
+    // sp[-8]  = EBP
+    // sp[-9]  = ESI
+    // sp[-10] = EDI
+    // After this, we need 4 words (16-bit each) for DS/ES/FS/GS
+    // sp[-11] will contain DS and ES (2 bytes each, packed into 32-bit word)
+    // sp[-12] will contain FS and GS (2 bytes each, packed into 32-bit word)
 
-//     // Now set up context that dispatch_first_run will restore
-//     /*EIP*/        *(((uint32_t *) stack) - 2) = (uint32_t) func;
-//     /*FLG*/        *(((uint32_t *) stack) - 3) = 0 | (1 << 9);
-//     /*EAX*/        *(((uint32_t *) stack) - 4) = 0;
-//     /*ECX*/        *(((uint32_t *) stack) - 5) = 0;
-//     /*EDX*/        *(((uint32_t *) stack) - 6) = 0;
-//     /*EBX*/        *(((uint32_t *) stack) - 7) = 0;
-//     /*ESP*/        *(((uint32_t *) stack) - 8) = (uint32_t)(((uint32_t *) stack) - 1);  // Points to exit_thread
-//     /*EBP*/        *(((uint32_t *) stack) - 9) = (uint32_t)(((uint32_t *) stack) - 1);
-//     /*ESI*/        *(((uint32_t *) stack) - 10) = 0;
-//     /*EDI*/        *(((uint32_t *) stack) - 11) = 0;
-//     /*DS*/         *(((uint16_t *) stack) - 23) = ds;
-//     /*ES*/         *(((uint16_t *) stack) - 24) = es;
-//     /*FS*/         *(((uint16_t *) stack) - 25) = fs;
-//     /*GS*/         *(((uint16_t *) stack) - 26) = gs;
+    sp[0]  = (uint32_t) exit_thread;    // Return address
+    sp[-1] = (uint32_t) func;            // EIP - thread entry point
+    sp[-2] = 0x200;                      // EFLAGS - IF=1 (interrupts enabled)
+    sp[-3] = 0;                          // EAX
+    sp[-4] = 0;                          // ECX
+    sp[-5] = 0;                          // EDX
+    sp[-6] = 0;                          // EBX
+    sp[-7] = (uint32_t)(&sp[0]);        // ESP - points to return address
+    sp[-8] = (uint32_t)(&sp[0]);        // EBP
+    sp[-9] = 0;                          // ESI
+    sp[-10] = 0;                         // EDI
 
-//     /* Stack pointer points to GS (the first thing that will be popped) */
-//     micros_threads[new_tcb]->sp = (uint32_t)(((uint16_t *) stack) - 26);
+    // Segment registers - packed as 16-bit values
+    // dispatch_first_run does: popw %gs, popw %fs, popw %es, popw %ds
+    // So we need them in reverse order in memory (stack grows down)
+    uint16_t *sp16 = (uint16_t *)&sp[-11];
+    sp16[1] = ds;  // Will be popped last (DS)
+    sp16[0] = es;  // (ES)
+    sp16 = (uint16_t *)&sp[-12];
+    sp16[1] = fs;  // (FS)
+    sp16[0] = gs;  // Will be popped first (GS)
 
-//     if (ready_queue) {
-//         if (heap_insert(ready_queue, micros_threads[new_tcb]) != 0) {
-//             puts("Failed to insert thread into ready queue!\n");
-//         }
-//     }
-//     curr_tid = new_tcb;
-//     return new_tcb;
-// }
+    // Stack pointer points to GS (first thing to be popped)
+    micros_threads[new_tcb]->sp = (uint32_t)&sp[-12];
 
+    if (ready_queue) {
+        if (heap_insert(ready_queue, micros_threads[new_tcb]) != 0) {
+            puts("Failed to insert thread into ready queue!\n");
+        }
+    }
+
+    curr_tid = new_tcb;
+    return new_tcb;
+}
 
 int thread_func(){
+     __asm__ volatile ("cli");  // Clear interrupt flag
     int id = thread_ids++;  //  id is 0 based  // FIXME this does not seem right
     int i;
     char buff[16];
@@ -332,7 +354,7 @@ int thread_func(){
         if(1){ // only if preemptive scheduling is enabled
             // yield();
         }
-        if(++counter[id-1] == 3)  // run 3 times, counter is global array  -> this needs to come from args
+        if(++counter[id] == 3)  // run 3 times, counter is global array  -> this needs to come from args
             break;
     }
 
@@ -340,8 +362,10 @@ int thread_func(){
     puts("Done ");
     puts(buff);
     puts(" !\n");
-    done[id-1] = TRUE;
+    done[id] = TRUE;
 
+    // Re-enable interrupts at the end
+    __asm__ volatile ("sti");  // Set interrupt flag
 
     return 0;
 }

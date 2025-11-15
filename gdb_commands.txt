@@ -1,0 +1,29 @@
+# Connect and set up
+target remote localhost:1234
+layout regs  # See registers while stepping
+
+# Set breakpoints at key functions
+break kmain
+break thread_create
+break dispatch_first_run
+break exit_thread
+break thread_func
+break thread.c:347  # end of thread_func
+# Continue to first breakpoint
+continue
+
+# Examine state at thread creation
+break thread_create
+continue
+layout regs               # Show registers
+stepi                     # Step through stack setup
+x/20x $esp                # Examine stack contents
+
+# Debug context switch
+break dispatch_first_run
+continue
+layout asm                # Switch to assembly view
+stepi                     # Step through each instruction
+info registers            # Check register values
+
+info all-registers   # view all registers at once

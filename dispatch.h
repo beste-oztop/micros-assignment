@@ -8,7 +8,7 @@
 
 /* External runtime/thread state */
 extern int curr_tid;
-extern tcb *current_thread;
+extern tcb *current_thread;  // this is a global pointer to the currently running thread
 extern tcb *micros_threads[MAX_THREADS];
 
 /* Prototypes for dispatching / scheduling */
