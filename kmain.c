@@ -107,7 +107,7 @@ void kmain(multiboot_info_t* mbd, unsigned long magic_num){
 
     /* Predefined Ci, Ti and max_jobs for [MAX_THREADS] threads */
     static const uint32_t exec_time_predef[MAX_THREADS] = { 2, 2, 3 };   /* .execution_time*/
-    static const uint32_t period_predef[MAX_THREADS]    = { 5, 10, 20 };  /* .period */
+    static const uint32_t period_predef[MAX_THREADS]    = { 10, 5, 20 };  /* .period */
     static const uint32_t max_jobs_predef[MAX_THREADS]  = { 3, 3, 3 };   /* .max_jobs */
 
 

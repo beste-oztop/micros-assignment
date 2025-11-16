@@ -6,7 +6,7 @@ This document tracks the development progress for the MICROS (Microsecond Time-a
 ---
 
 ## Phase 1: Core Infrastructure Setup
-**Status**: Partially Complete ✓
+**Status**: Finished
 
 - [x] Basic heap structure defined in `heap.h`
 - [x] Basic TCB structure defined in `helpers.h`
@@ -23,7 +23,7 @@ This document tracks the development progress for the MICROS (Microsecond Time-a
 ---
 
 ## Phase 2: Thread Pool & Creation
-**Status**: Not Started
+**Status**: Finished
 
 - [X] Update `thread_create()` signature to accept args:
   ```c
@@ -32,19 +32,19 @@ This document tracks the development progress for the MICROS (Microsecond Time-a
 - [X] Define `struct sched_params_t` structure for C and T parameters
 - [X] Modify `thread_create()` to parse and store scheduling parameters from args
 - [X] Initialize thread pool (array of N TCBs) at boot time
-- [ ] Implement thread pool management (mark busy/idle)
-- [ ] Implement thread termination and return to idle state
+- [x] Implement thread pool management (mark busy/idle)
+- [x] Implement thread termination and return to idle state
 
 ---
 
 ## Phase 3: Heap-Based Priority Queue
-**Status**: Not Started
+**Status**: Finished
 
 - [x] Implement `heap_insert()` - add thread to heap based on priority
 - [x] Implement `heap_remove()` - remove and return highest priority thread
-- [ ] Implement `heapify()` - rebuild heap maintaining min-heap property
+- [x] Implement `heapify()` - rebuild heap maintaining min-heap property
 - [x] Modify heap structure to store `[priority, TCB pointer]` instead of just integers
-- [] Create ready queue management functions:
+- [ ] Create ready queue management functions:
   - `add_to_ready_queue(tcb *thread)`
   - `get_next_thread()`
   - `remove_from_ready_queue(tcb *thread)`
@@ -52,12 +52,12 @@ This document tracks the development progress for the MICROS (Microsecond Time-a
 ---
 
 ## Phase 4: Basic Non-Preemptive Scheduling (Step 1)
-**Status**: Not Started
+**Status**: Partially Complete
 
 - [x] Implement basic `schedule_rm()` function
-- [ ] Pick threads from heap in priority order
-- [ ] Run each thread to completion (non-preemptive)
-- [ ] Create simple test thread functions that print `<TID,C,T>` format
+- [x] Pick threads from heap in priority order
+- [x] Run each thread to completion (non-preemptive)
+- [x] Create simple test thread functions that print `<TID,C,T>` format
 - [ ] Implement output formatting functions for tuple printing
 
 ---
@@ -75,7 +75,7 @@ This document tracks the development progress for the MICROS (Microsecond Time-a
 ## Phase 6: Cooperative Preemption (Step 3)
 **Status**: Not Started
 
-- [ ] Implement `yield()` function
+- [x] Implement `yield()` function
 - [ ] Create wait queue for yielded threads
 - [ ] Save current thread context on yield
 - [ ] Load next highest priority thread from ready queue
