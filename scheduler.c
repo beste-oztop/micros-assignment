@@ -10,8 +10,7 @@
 // extern int curr_tid; /*Current thread ID*/
 // extern tcb *current_thread; /*Current thread pointer*/
 
-
-
+extern void print_thread_args(uint32_t tid, uint32_t C, uint32_t T);
 /* comparator: higher priority = smaller period. Tie-breaker: smaller id. */
 static int rm_cmp(const void *a, const void *b){
         uint32_t thread_period_a = ((tcb *)a)->period;
@@ -60,12 +59,7 @@ void schedule_rm_org(void){
 
         while(heap_remove(ready_queue, &node) == 0) {
                 // Debug info
-
-                puts("Examining thread ID: ");
-                putint(node.tcb->tid);
-                puts(" with period: ");
-                putint(node.tcb->period);
-                puts(" / ");
+                print_thread_args(node.tcb->tid, node.tcb->execution_time, node.tcb->period);
                 tcb *thread = node.tcb;
                 if (!thread) continue; // safety check
 
@@ -127,11 +121,8 @@ void schedule_rm_org(void){
                 // Set the best candidate as running
                 // Print debug info
                 #ifdef KERNEL_MODE
-                        puts("Scheduled thread ID: ");
-                        putint(best_candidate->tid);
-                        puts(" with period: ");
-                        putint(best_candidate->period);
-                        puts("\n");
+                        print_thread_args(best_candidate->tid, best_candidate->execution_time, best_candidate->period);
+                        puts("Selected as next thread to run.\n");
                 #endif
                 // FIXME: Things get messy after this point
                 best_candidate->state = THREAD_RUNNING;
@@ -160,9 +151,6 @@ void schedule_rm_org(void){
 /* Schedule threads using Rate-Monotonic Scheduling */
 void schedule_rm(void){
     __asm__ volatile ("cli");  // Disable interrupts
-
-    puts("RM Scheduler called\n");
-
     if (!ready_queue) {
         puts("Error: ready_queue not initialized!\n");
         __asm__ volatile ("sti");
@@ -184,15 +172,14 @@ void schedule_rm(void){
         // Skip exited threads
         if (thread->state == THREAD_EXITED) {
             puts("Skipping exited thread ");
-            putint(thread->tid);
-            puts("\n");
+            print_thread_args(thread->tid, thread->execution_time, thread->period);
             continue;
         }
 
         // Skip threads that completed all jobs
         if (thread->is_periodic && thread->jobs_done >= thread->max_jobs) {
             puts("Thread ");
-            putint(thread->tid);
+            print_thread_args(thread->tid, thread->execution_time, thread->period);
             puts(" completed all jobs\n");
             thread->state = THREAD_EXITED;
             continue;
@@ -222,11 +209,8 @@ void schedule_rm(void){
         current_thread = best_thread;
         curr_tid = best_thread->tid;
 
-        puts("Scheduled thread ID: ");
-        putint(curr_tid);
-        puts(" (period=");
-        putint(best_thread->period);
-        puts(")\n");
+        puts("Scheduled ");
+        print_thread_args(curr_tid, best_thread->execution_time, best_thread->period);
     } else {
         // No runnable threads
         puts("No runnable threads found!\n");

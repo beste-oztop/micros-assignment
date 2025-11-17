@@ -336,19 +336,19 @@ int thread_create(void *stack, void *func, void *args){
 
 int thread_func(){
      __asm__ volatile ("cli");  // Clear interrupt flag
-    int id = thread_ids++;  //  id is 0 based  // FIXME this does not seem right
+    // int id = curr_tid;  //  GIVES ERROR qemu does not work
+    int id = thread_ids;  //  id is 0 based  // FIXME this does not seem right
     int i;
     char buff[16];
     itoa(id, buff, 10);
 
     puts("Thread ");
     putint(id);
-    puts(" started!   ");
+    puts(" started!");
     while(1){
         for (i = 0; i < 10; i++){
-            puts(buff);
-            // busy_wait();
-            // puts("1");
+            // puts(buff);
+            busy_wait();
         }
         // putc('\n');
         if(1){ // only if preemptive scheduling is enabled
